@@ -307,10 +307,9 @@ function beltPoint(belt, progress) {
 }
 
 function buildConveyors() {
+  // Uma esteira principal centralizada na célula.
   beltOne = createConveyor(-3.1, 0, 0, 5.2);
-
-  // Segunda esteira cruzada, alimentando a área de trabalho
-  beltTwo = createConveyor(0.5, -3.15, Math.PI / 2, 5.1);
+  beltTwo = null;
 }
 
 /* =====================================================
@@ -347,13 +346,13 @@ function spawnBeltBoxes() {
 }
 
 function updateConveyorBoxes(dt) {
-  if (!beltOne || !beltTwo) return;
+  if (!beltOne) return;
   const queue = conveyorBoxes.filter(item => item.belt === 0 && item.mesh !== activeBox).sort((a,b) => b.progress-a.progress);
   if (state.running && !state.failure && !activeBox && queue.length) {
     queue[0].progress = Math.min(0.88, queue[0].progress + dt * queue[0].speed * (state.speed / 70));
   }
   conveyorBoxes.forEach(item => {
-    const belt = item.belt === 0 ? beltOne : beltTwo;
+    const belt = beltOne;
     belt.group.updateMatrixWorld(true);
     const p = beltPoint(belt, item.progress);
     item.mesh.position.set(p.x, p.y, p.z);
