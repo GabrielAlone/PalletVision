@@ -145,7 +145,7 @@ function buildEnvironment() {
   for(let x of [-5.8,5.8]) box(scene,.07,.02,7.8,M.amber,x,.005,0);
   addLabel("CELULA PAL-01",-5.5,.02,-5.7,.8);
   beltIn=createConveyor(-3.75,.45,4.8,false);
-  beltOut=createConveyor(7.0,1.75,5.4,true);
+  beltOut=createConveyor(6.0,1.75,5.8,true);
   buildRobot();
   pallet=buildPallet(); pallet.group.position.set(1.55,0,1.75);
   for(let i=0;i<3;i++) {
@@ -224,7 +224,7 @@ function completeBox() {
   addHistory("Caixa "+state.boxes+" posicionada");
   if(state.boxes%PER_PALLET===0) {
     addHistory("Palete "+(state.boxes/PER_PALLET)+" completo — encaminhado para saída");
-    palletTransfer={elapsed:0,group:pallet.group,fromX:1.55,toX:7.0,fromY:0,toY:.96};
+    palletTransfer={elapsed:0,group:pallet.group,fromX:1.55,toX:6.0,fromY:0,toY:.96};
     pallet=null;
   }
   renderDashboard();
@@ -423,10 +423,17 @@ function renderDashboard() {
   else if(state.running) {status.textContent="PROCESSO EM OPERAÇÃO";msg.textContent="Alimentação e paletização em andamento";light.style.background="var(--green)";}
   else {status.textContent=boxes>=TOTAL?"LOTE CONCLUÍDO":"PROCESSO PARADO";msg.textContent=boxes>=TOTAL?"150 caixas processadas":"Aguardando comando do operador";light.style.background="var(--steel-light)";}
   if($("sceneState")) $("sceneState").textContent=state.failure?"● FALHA":state.warning?"● ATENÇÃO":state.running?"● EM OPERAÇÃO":"● EM ESPERA";
-  if($("sceneStep")) $("sceneStep").textContent=state.failure?"Operação interrompida":state.running?(activeBox?"Robô posicionando caixa":"Aguardando caixa na entrada"):"Aguardando início";
+  if($("sceneStep")) $("sceneStep").textContent=state.failure?"Operação interrompida":palletTransfer?"Transferindo palete completo":state.running?(activeBox?"Robô posicionando caixa":"Aguardando caixa na entrada"):"Aguardando início";
   if($("bToggle")) $("bToggle").textContent=state.running?"Ⅱ Pausar processo":"▶ Iniciar processo";
   if($("currentStep")) $("currentStep").textContent=state.running?"Ciclo de coleta e posicionamento":"Aguardando início";
-  if($("nextStep")) $("nextStep").textContent=state.running?"Transferir próxima caixa":state.failure?"Verificar equipamento":"Iniciar processo";
+  if($("nextStep")) $("nextStep").textContent=state.running?(palletTransfer?"Expedir palete completo":activeBox?"Empilhar caixa":"Alimentar estação"):state.failure?"Verificar equipamento":"Iniciar processo";
+  const flowStage=state.failure?"":palletTransfer?"exit":activeBox?"stack":state.running?"feed":"idle";
+  ["flowFeed","flowPick","flowStack","flowExit"].forEach((id,i)=>{
+    const el=$(id); if(!el)return;
+    const stages=["feed","pick","stack","exit"];
+    el.classList.toggle("active",flowStage===stages[i]);
+    el.classList.toggle("done",flowStage&&stages.indexOf(flowStage)>i);
+  });
   if($("updated")) $("updated").textContent=timeString();
   updateEquipment();renderAlerts();
 }
