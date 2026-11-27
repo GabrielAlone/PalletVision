@@ -413,7 +413,7 @@ function renderDashboard() {
   if($("palletPosition")) $("palletPosition").textContent=current+" / 30 caixas";
   if($("palletCount")) $("palletCount").textContent=String(current).padStart(2,"0");
   if($("palletPct")) $("palletPct").textContent=Math.round(current/30*100)+"%";
-  if($("layer")) $("layer").textContent=current>=30?"PALLETE COMPLETO":"CAMADA "+Math.min(5,Math.floor(current/6)+1);
+  if($("layer")) $("layer").textContent=current>=30?"PALETE COMPLETO":"CAMADA "+Math.min(5,Math.floor(current/6)+1);
   if($("positionGrid")) [...$("positionGrid").children].forEach((el,i)=>el.classList.toggle("filled",i<current));
   if($("elapsed")) $("elapsed").textContent=String(Math.floor(state.seconds/60)).padStart(2,"0")+":"+String(state.seconds%60).padStart(2,"0");
   if($("cycleTime")) $("cycleTime").textContent=state.running?"Ciclo automático":"Ciclo: —";
