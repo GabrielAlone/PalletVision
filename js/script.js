@@ -499,6 +499,22 @@ function renderDashboard() {
   else if(state.running) {status.textContent="PROCESSO EM OPERAÇÃO";msg.textContent="Alimentação e paletização em andamento";light.style.background="var(--green)";}
   else {status.textContent=boxes>=TOTAL?"LOTE CONCLUÍDO":"PROCESSO PARADO";msg.textContent=boxes>=TOTAL?"135 caixas processadas":"Aguardando comando do operador";light.style.background="var(--steel-light)";}
   if($("sceneState")) $("sceneState").textContent=state.failure?"● FALHA":state.warning?"● ATENÇÃO":state.running?"● EM OPERAÇÃO":"● EM ESPERA";
+
+  const notice=$("lineNotice");
+  if(notice) {
+    notice.hidden=!(state.failure||state.warning);
+    notice.classList.toggle("warning-notice",state.warning&&!state.failure);
+    if(state.failure) {
+      $("noticeIcon").textContent="!";
+      $("noticeTitle").textContent="FALHA: robô paletizador interrompido";
+      $("noticeText").textContent="A simulação foi pausada. Verifique o robô e reconheça a ocorrência antes de reiniciar.";
+    } else if(state.warning) {
+      $("noticeIcon").textContent="!";
+      $("noticeTitle").textContent="ATENÇÃO: sensor fotoelétrico";
+      $("noticeText").textContent="Foi detectada uma condição de atenção simulada. Confira a entrada de caixas e a central de alertas.";
+    }
+  }
+  if($("bAcknowledge")) $("bAcknowledge").disabled=!(state.failure||state.warning);
   const robotPhase=!activeBox?"Aguardando caixa na entrada":
     cycle<.15?"Aproximando a garra da caixa":
     cycle<.22?"Prendendo a caixa":
@@ -526,6 +542,29 @@ function updateProductionMetrics() {
   if($("throughput")) $("throughput").textContent=rate.toFixed(1).replace(".",",");
   if($("averageCycle")) $("averageCycle").textContent=state.boxes?average.toFixed(1).replace(".",",")+" s/caixa":"— s/caixa";
 }
+function exportReport() {
+  const rows = [
+    ["RELATÓRIO DE PRODUÇÃO - PALLETINOVA"],
+    ["Data de exportação", new Date().toLocaleString("pt-BR")],
+    ["Célula", "PAL-01"], ["Origem dos dados", "Simulação local"],
+    ["Caixas posicionadas", state.boxes], ["Meta de caixas", TOTAL],
+    ["Paletes concluídos", Math.floor(state.boxes/PER_PALLET)],
+    ["Tempo de operação (segundos)", state.seconds], ["Velocidade configurada (%)", state.speed],
+    ["Paradas registradas", state.stops],
+    ["Estado atual", state.failure ? "Falha" : state.warning ? "Atenção" : state.running ? "Em operação" : state.boxes>=TOTAL ? "Lote concluído" : "Parado"],
+    [], ["HISTÓRICO DE ATIVIDADES"], ["Horário", "Evento"],
+    ...state.history.slice().reverse().map(item => [item.time, item.message]),
+    [], ["REGISTRO DE ALERTAS"], ["Horário", "Tipo", "Ocorrência", "Detalhes"],
+    ...state.alerts.slice().reverse().map(item => [item.time, item.type, item.title, item.message])
+  ];
+  const csv = "\uFEFF" + rows.map(row => row.map(value => '"' + String(value ?? "").replace(/"/g, '""') + '"').join(";")).join("\r\n");
+  const blob = new Blob([csv], {type:"text/csv;charset=utf-8;"});
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href=url; link.download="relatorio-palletinova-"+new Date().toISOString().slice(0,10)+".csv";
+  document.body.appendChild(link); link.click(); link.remove(); URL.revokeObjectURL(url);
+  addHistory("Relatório CSV exportado pelo operador");
+}
 function acknowledgeAlert() {
   const hadOccurrence=state.warning||state.failure;
   if(state.failure) state.running=false;
@@ -549,6 +588,7 @@ function pauseProcess(){
   renderDashboard();
 }
 function resetProcess() {
+  if(!window.confirm("Deseja reiniciar o lote? A produção e o histórico atuais serão zerados.")) return;
   state.running=false;state.warning=false;state.failure=false;state.boxes=0;state.seconds=0;state.elapsed=0;state.stops=0;
   cycle=0;activeBox=null;
   if(palletTransfer && palletTransfer.group) scene.remove(palletTransfer.group);
@@ -585,6 +625,7 @@ function init() {
   renderGrid();renderEquipment();addHistory("Sistema de monitoramento inicializado");
   $("bToggle").addEventListener("click",()=>state.running?pauseProcess():startProcess());
   $("bReset").addEventListener("click",resetProcess);
+  if($("bExport")) $("bExport").addEventListener("click",exportReport);
   $("bWarn").addEventListener("click",simulateWarning);
   $("bFail").addEventListener("click",simulateFailure);
   if($("bAcknowledge")) $("bAcknowledge").addEventListener("click",acknowledgeAlert);
