@@ -12,6 +12,15 @@ const $ = id => document.getElementById(id);
 const TOTAL = 125;
 const PER_PALLET = 25;
 
+// Posição da estação de paletização e das vagas de saída.
+const palletPositions = [
+  [2.2, 1.8],
+  [2.2, 1.8],
+  [2.2, 1.8],
+  [2.2, 1.8],
+  [2.2, 1.8]
+];
+
 const state = {
   running: false,
   warning: false,
@@ -54,6 +63,7 @@ const palette = {
   box: "#b77a3e",
   boxLight: "#d6a36b",
   wood: "#9b6738",
+  woodLight: "#c18a52",
   green: "#00d69a",
   red: "#ed454f"
 };
