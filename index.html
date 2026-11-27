@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="Painel de acompanhamento da célula automatizada de paletização PAL-01.">
-  <title>PALLETINOVA | Controle de Paletização</title>
+  <title>PALLET VISION | Sistema de Paletização</title>
   <link rel="stylesheet" href="css/style.css">
 
   <!-- Biblioteca responsável pelo modelo 3D -->
@@ -17,7 +17,7 @@
   <a class="brand" href="#dashboard">
     <span class="brand-mark">P</span>
     <span>
-      <b>PALLETINOVA</b>
+      <b>PALLET VISION</b>
       <small>INDUSTRIAL MONITORING SYSTEM</small>
     </span>
   </a>
@@ -44,7 +44,7 @@
     </div>
 
     <div class="actions">
-      <button class="btn ghost" id="bExport" title="Baixar relatório da produção">↓ Exportar relatório</button>
+      <button class="btn ghost" id="bExport" title="Gerar relatório para impressão">▤ Imprimir relatório</button>
       <button class="btn ghost" id="bReset" title="Zerar a simulação atual">↻ Reiniciar lote</button>
       <button class="btn primary" id="bToggle">▶ Iniciar processo</button>
     </div>
@@ -325,7 +325,8 @@
           Velocidade da simulação
           <b id="speedValue">90%</b>
         </label>
-        <input type="range" id="speed" min="70" max="125" value="90">
+        <input type="range" id="speed" min="50" max="200" step="10" value="90" aria-describedby="speedHelp">
+        <small id="speedHelp" class="speed-help">Ajuste de 50% (mais lento) a 200% (mais rápido). Afeta a movimentação da simulação.</small>
       </div>
 
       <div class="simulation-caption">FERRAMENTAS DE TESTE · NÃO REPRESENTAM FALHAS REAIS</div>
@@ -360,8 +361,9 @@
     <div class="integration-note"><b>Tecnologias consideradas:</b> sensores, CLPs, APIs REST, MQTT, OPC UA, Node-RED e WebSocket. A conexão com equipamentos reais não faz parte desta fase; esta área registra uma possibilidade de evolução do sistema.</div>
   </section>
   <footer>
-    PALLETINOVA · Célula PAL-01 · Ambiente demonstrativo com dados simulados
+    PALLET VISION · Célula PAL-01 · Ambiente demonstrativo com dados simulados
   </footer>
+  <section id="printReport" class="print-report" aria-hidden="true"></section>
 
 </main>
 
