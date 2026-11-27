@@ -28,6 +28,7 @@
     <a href="#estacao">Paletização</a>
     <a href="#equipamentos">Equipamentos</a>
     <a href="#alertas">Alertas</a>
+    <a href="#integracao">Integração</a>
   </nav>
 
   <div class="online"><i></i> SISTEMA ONLINE</div>
@@ -73,7 +74,8 @@
       <b class="green-text">● SIMULAÇÃO LOCAL</b>
     </div>
 
-    <span class="sim-tag">SIMULAÇÃO</span>
+    <div class="status-item"><small>PARADAS</small><b id="stopCount">0 registradas</b></div>
+    <span class="sim-tag">DADOS SIMULADOS</span>
   </section>
 
   <section class="kpis" id="producao">
@@ -124,6 +126,18 @@
       <div class="foot">
         <small id="cycleTime">Ciclo: —</small>
         <small id="clock">--:--:--</small>
+      </div>
+    </article>
+
+    <article class="card kpi">
+      <span>Ritmo médio</span>
+      <div class="metric">
+        <b id="throughput">0,0</b>
+        <small>caixas/min</small>
+      </div>
+      <div class="foot">
+        <small>Produção por tempo ativo</small>
+        <small id="averageCycle">— s/caixa</small>
       </div>
     </article>
 
@@ -215,7 +229,7 @@
 
       <span class="eyebrow">CAIXAS POSICIONADAS</span>
 
-      <div class="position-grid" id="positionGrid"></div>
+      <div class="layer-stack" id="positionGrid" aria-label="Posições das caixas nas três camadas do palete"></div>
 
       <div class="mini-legend">
         <span><i class="occupied"></i> Ocupada</span>
@@ -283,6 +297,7 @@
       </div>
 
       <ul class="alert-list" id="alertList"></ul>
+      <button class="btn acknowledge" id="bAcknowledge" type="button">✓ Reconhecer ocorrência</button>
 
     </article>
 
@@ -314,6 +329,27 @@
 
   </section>
 
+
+  <section class="card integration-card" id="integracao">
+    <div class="card-heading">
+      <div>
+        <span class="eyebrow">EVOLUÇÃO DO PROJETO</span>
+        <h2>Possibilidades de integração industrial</h2>
+      </div>
+      <span class="state-chip">ETAPA FUTURA</span>
+    </div>
+    <p class="integration-intro">Atualmente, o painel trabalha com dados simulados por JavaScript. Em uma aplicação conectada à fábrica, essas informações poderão vir dos equipamentos por uma arquitetura como esta:</p>
+    <div class="integration-flow">
+      <div><b>Sensores e CLPs</b><small>Contagem, presença de caixa, estado e falhas</small></div>
+      <span>→</span>
+      <div><b>Node-RED / OPC UA</b><small>Coleta e organização dos dados industriais</small></div>
+      <span>→</span>
+      <div><b>API REST / MQTT</b><small>Comunicação entre equipamentos e aplicação</small></div>
+      <span>→</span>
+      <div><b>WebSocket</b><small>Atualização dos indicadores em tempo real</small></div>
+    </div>
+    <div class="integration-note"><b>Tecnologias consideradas:</b> sensores, CLPs, APIs REST, MQTT, OPC UA, Node-RED e WebSocket. A conexão com equipamentos reais não faz parte desta fase; esta área registra uma possibilidade de evolução do sistema.</div>
+  </section>
   <footer>
     PALLETINOVA · Célula PAL-01 · Ambiente demonstrativo com dados simulados
   </footer>
