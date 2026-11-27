@@ -864,3 +864,151 @@ footer {
 .belt-swatch {
   background: #aeb9bf;
 }
+
+
+/* =====================================================
+   PALLETINOVA — acabamento industrial revisado
+===================================================== */
+:root {
+  --bg: #111719;
+  --panel: #20282b;
+  --panel2: #293236;
+  --line: #465156;
+  --text: #edf0f1;
+  --muted: #a0aaae;
+  --green: #00c58b;
+  --blue: #8c989e;
+  --yellow: #c99b50;
+  --red: #df6262;
+}
+body {
+  background:
+    linear-gradient(90deg, #ffffff05 1px, transparent 1px),
+    linear-gradient(#ffffff05 1px, transparent 1px),
+    radial-gradient(ellipse at 50% -25%, #465257 0, transparent 58%),
+    #111719;
+  background-size: 36px 36px, 36px 36px, auto, auto;
+}
+.topbar {
+  background: rgba(20,27,30,.97);
+  border-bottom-color: #485358;
+  box-shadow: 0 5px 22px #0004;
+}
+.brand-mark {
+  background: linear-gradient(145deg,#00c58b,#08765e);
+  color: #06251d;
+}
+nav a { color: #c0c9cc; transition: color .2s; }
+nav a:hover { color: var(--green); }
+.card {
+  background: linear-gradient(145deg,#273135,#1c2427);
+  border-color: #465257;
+  box-shadow: 0 10px 26px #0003, inset 0 1px #ffffff08;
+}
+.kpi { border-top-color: #8f9ba0; }
+.kpi:nth-child(2) { border-top-color: #00c58b; }
+.kpi:nth-child(3) { border-top-color: #b38c55; }
+.kpi:nth-child(4) { border-top-color: #68777d; }
+.statusbar {
+  background: linear-gradient(105deg,#293438,#20292d);
+  border-color: #4a575c;
+}
+.status-light { background: var(--green); }
+.state-chip,.sim-tag {
+  background: #303c41;
+  border-color: #58666c;
+  color: #d2dadd;
+}
+.btn { letter-spacing: .1px; }
+.btn.primary {
+  background: linear-gradient(135deg,#078e6b,#006e55);
+  border-color: #16a47f;
+}
+.btn.ghost { background: #303b40; border-color: #59666b; }
+.btn.warning { background: #6e552f; border-color: #a17b42; }
+.btn.danger { background: #793a3e; border-color: #a94f54; }
+.progress { background: #3b464a; }
+.progress i {
+  background: linear-gradient(90deg,#078b69,#00c58b);
+}
+.scene-frame {
+  background: linear-gradient(145deg,#7b878b,#4d595e);
+  border-color: #657278;
+  box-shadow: inset 0 0 35px #1118;
+}
+.scene-topline span,.scene-topline b,.scene-legend {
+  background: rgba(20,27,30,.92);
+  border: 1px solid #58656a;
+}
+.robot-swatch,.belt-swatch { background: #aeb8bd; }
+.box-swatch { background: #bd8955; }
+.fence-swatch { background: #9ca7ab; }
+.position-grid i {
+  background: linear-gradient(145deg,#354248,#2a353a);
+  border-color: #58666b;
+}
+.position-grid i.filled {
+  background: linear-gradient(145deg,#a8b2b6,#647278);
+  border-color: #d0d7da;
+  box-shadow: 0 0 9px #b8c4c833;
+}
+.mini-legend i.occupied { background: #9aa7ac; border-color: #c5ced1; }
+.pallet-card .state-chip { background: #303b40; }
+.alert-card {
+  background: linear-gradient(145deg,#302c2b,#242426);
+  border-color: #5b4b42;
+}
+.alert-summary {
+  border-color: #27745d;
+  background: #1d4037;
+}
+.alert-summary.warning { border-color: #a17b42; background: #493b27; }
+.alert-summary.failure { border-color: #a94f54; background: #482a2d; }
+.equipment-list li,.alert-list li,.history-list li {
+  border-bottom-color: #3c484d;
+}
+.scene-error {
+  position: absolute;
+  z-index: 4;
+  left: 18px;
+  right: 18px;
+  top: 50%;
+  transform: translateY(-50%);
+  padding: 16px 18px;
+  border: 1px solid #b65b5b;
+  border-radius: 8px;
+  background: #351f22;
+  color: #ffe3e3;
+  font-size: 12px;
+  line-height: 1.6;
+}
+.speed-control input { accent-color: #00c58b; }
+footer {
+  border-top: 1px solid #3d494e;
+  color: #849196;
+  letter-spacing: .5px;
+}
+@media (max-width: 980px) {
+  .topbar { height: auto; min-height: 72px; flex-wrap: wrap; padding: 14px 4%; }
+  nav { order: 3; width: 100%; overflow-x: auto; padding: 5px 0; }
+  .online { margin-left: auto; }
+  .main-grid { grid-template-columns: 1fr; }
+  .scene-frame { height: 430px; }
+}
+@media (max-width: 680px) {
+  .wrap { padding: 20px 4% 16px; }
+  .page-heading { align-items: flex-start; flex-direction: column; }
+  .actions { width: 100%; }
+  .actions .btn { flex: 1; }
+  .statusbar { flex-wrap: wrap; gap: 14px; }
+  .status-main { flex-basis: 100%; }
+  .status-item { min-width: 28%; }
+  .kpis { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .bottom-grid { grid-template-columns: 1fr; }
+  .scene-frame { height: 350px; }
+  .process-info { grid-template-columns: 1fr; }
+  .pallet-count { margin-top: 18px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *,*::before,*::after { animation-duration:.01ms!important; transition-duration:.01ms!important; }
+}
