@@ -32,6 +32,7 @@ let fingerLeft, fingerRight;
 let conveyorBoxes = [];
 let palletObjects = [];
 let activeBox = null;
+let palletTransfer = null;
 
 let cycle = 0;
 let lastTime = Date.now();
@@ -307,9 +308,9 @@ function beltPoint(belt, progress) {
 }
 
 function buildConveyors() {
-  // Uma esteira principal centralizada na célula.
+  // Alimentação da célula e saída de paletes completos.
   beltOne = createConveyor(-3.1, 0, 0, 5.2);
-  beltTwo = null;
+  beltTwo = createConveyor(5.2, 1.8, 0, 4.2);
 }
 
 /* =====================================================
@@ -400,6 +401,7 @@ function createPallet(x, z, index) {
   // Identificação do palete
   cube(group, 0.8, 0.2, 0.05, M.dark, 0, 0.5, 0.82);
 
+  group.visible = index === 0;
   palletObjects.push({ group, slots, index });
 }
 
@@ -737,7 +739,13 @@ function updatePickAndPlace(dt) {
     addHistory("Caixa " + state.boxes + " posicionada");
 
     if (state.boxes % PER_PALLET === 0) {
-      addHistory("Palete " + (state.boxes / PER_PALLET) + " concluído");
+      const finishedIndex = state.boxes / PER_PALLET - 1;
+      addHistory("Palete " + (finishedIndex + 1) + " concluído — saída automática");
+      palletTransfer = { index: finishedIndex, elapsed: 0, fromX: 2.2, toX: 7.3 };
+      if (palletObjects[finishedIndex + 1]) {
+        palletObjects[finishedIndex + 1].group.position.set(2.2, 0, 1.8);
+        palletObjects[finishedIndex + 1].group.visible = true;
+      }
     }
 
     renderDashboard();
@@ -869,10 +877,25 @@ function resizeScene() {
   renderer.setSize(host.clientWidth, host.clientHeight);
 }
 
+function animatePalletTransfer(dt) {
+  if (!palletTransfer) return;
+  palletTransfer.elapsed += dt;
+  const t = Math.min(1, palletTransfer.elapsed / 2.2);
+  const eased = t * t * (3 - 2 * t);
+  const pallet = palletObjects[palletTransfer.index];
+  if (pallet) pallet.group.position.x = THREE.MathUtils.lerp(palletTransfer.fromX, palletTransfer.toX, eased);
+  if (beltTwo) beltTwo.rollers.forEach(roller => { roller.rotation.z += dt * 4.2; });
+  if (t >= 1) {
+    if (pallet) pallet.group.visible = false;
+    palletTransfer = null;
+  }
+}
+
 function animate() {
   requestAnimationFrame(animate);
 
   const dt = Math.min(clock.getDelta(), 0.04);
+  animatePalletTransfer(dt);
 
   if (state.running && !state.failure) {
     beltOne.rollers.forEach(roller => {
@@ -1294,10 +1317,11 @@ function resetProcess() {
   cycle = 0;
   boxCounter = 0;
 
-  palletObjects.forEach(pallet => {
-    pallet.slots.forEach(crate => {
-      crate.visible = false;
-    });
+  palletTransfer = null;
+  palletObjects.forEach((pallet, index) => {
+    pallet.group.position.set(2.2, 0, 1.8);
+    pallet.group.visible = index === 0;
+    pallet.slots.forEach(crate => { crate.visible = false; });
   });
 
   state.alerts = [];
