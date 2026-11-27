@@ -5,7 +5,7 @@ const $ = id => document.getElementById(id);
 const TOTAL = 135, PER_PALLET = 27;
 const state = {
   running:false, warning:false, failure:false, boxes:0, seconds:0,
-  speed:90, alerts:[], history:[], elapsed:0
+  speed:110, alerts:[], history:[], elapsed:0
 };
 
 let scene, camera, renderer, controls, clock;
