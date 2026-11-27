@@ -44,7 +44,8 @@
     </div>
 
     <div class="actions">
-      <button class="btn ghost" id="bReset">↻ Reiniciar lote</button>
+      <button class="btn ghost" id="bExport" title="Baixar relatório da produção">↓ Exportar relatório</button>
+      <button class="btn ghost" id="bReset" title="Zerar a simulação atual">↻ Reiniciar lote</button>
       <button class="btn primary" id="bToggle">▶ Iniciar processo</button>
     </div>
   </section>
@@ -76,6 +77,12 @@
 
     <div class="status-item"><small>PARADAS</small><b id="stopCount">0 registradas</b></div>
     <span class="sim-tag">DADOS SIMULADOS</span>
+  </section>
+
+  <section class="line-notice" id="lineNotice" role="alert" aria-live="assertive" hidden>
+    <span class="notice-icon" id="noticeIcon">!</span>
+    <div><b id="noticeTitle">Ocorrência identificada</b><small id="noticeText">Verifique a central de alertas.</small></div>
+    <a href="#alertas">Ver ocorrência</a>
   </section>
 
   <section class="kpis" id="producao">
@@ -297,7 +304,8 @@
       </div>
 
       <ul class="alert-list" id="alertList"></ul>
-      <button class="btn acknowledge" id="bAcknowledge" type="button">✓ Reconhecer ocorrência</button>
+      <button class="btn acknowledge" id="bAcknowledge" type="button" disabled>✓ Reconhecer ocorrência</button>
+      <small class="alert-help">Reconhecer registra que o operador tomou ciência. A causa deve ser verificada antes de retomar a produção.</small>
 
     </article>
 
@@ -320,6 +328,7 @@
         <input type="range" id="speed" min="70" max="125" value="90">
       </div>
 
+      <div class="simulation-caption">FERRAMENTAS DE TESTE · NÃO REPRESENTAM FALHAS REAIS</div>
       <div class="simulation-buttons">
         <button class="btn warning" id="bWarn">⚠ Simular atenção</button>
         <button class="btn danger" id="bFail">✖ Simular falha</button>
