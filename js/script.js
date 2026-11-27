@@ -387,9 +387,9 @@ function createPallet(x, z, index) {
       const crate = createCrate(
         group,
         -0.52 + (position % 3) * 0.52,
-        0.34 + layer * 0.49,
+        0.55 + layer * 0.49,
         -0.32 + Math.floor(position / 3) * 0.64,
-        0.7
+        0.82
       );
 
       crate.visible = false;
