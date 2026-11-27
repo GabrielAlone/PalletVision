@@ -1128,3 +1128,20 @@ footer {
   .flow-step span { font-size:8px; }
   .pallet-summary { grid-template-columns:1fr 1fr; }
 }
+
+
+/* Grade de 30 posições: três colunas por camada, com leitura vertical */
+.position-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+.position-grid i {
+  aspect-ratio: 1.35 / 1;
+  max-height: 38px;
+  background: linear-gradient(145deg,#354248,#263238);
+}
+.position-grid i.filled {
+  background: linear-gradient(145deg,#00c58b,#087b62);
+  border-color: #62e2bd;
+  box-shadow: 0 0 9px #00c58b35;
+}
