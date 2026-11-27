@@ -5,7 +5,7 @@ const $ = id => document.getElementById(id);
 const TOTAL = 150, PER_PALLET = 30;
 const state = {
   running:false, warning:false, failure:false, boxes:0, seconds:0,
-  speed:70, alerts:[], history:[], elapsed:0
+  speed:90, alerts:[], history:[], elapsed:0
 };
 
 let scene, camera, renderer, controls, clock;
@@ -22,10 +22,13 @@ const C = {
   wood:0x8a603b, woodLight:0xb18555, green:0x00c58b,
   amber:0xd59a43, red:0xd84d4d, white:0xe7ecee
 };
+const LAYER_CAPACITY = 9;
+const PALLET_LAYERS = 4;
 const material = (color, metalness=.25, roughness=.55) =>
   new THREE.MeshStandardMaterial({color,metalness,roughness});
 const M = Object.fromEntries(Object.entries(C).map(([k,v])=>[k,material(v)]));
 const V = (x,y,z)=>new THREE.Vector3(x,y,z);
+const HOME_POINT = V(-.85,2.38,.05);
 
 function mesh(parent, geo, mat, x=0,y=0,z=0) {
   const m=new THREE.Mesh(geo,mat); m.position.set(x,y,z);
@@ -59,19 +62,21 @@ function createCrate(parent) {
 }
 function createConveyor(x,z,length,output=false) {
   const g=new THREE.Group(); g.position.set(x,0,z); scene.add(g);
-  box(g,length,.34,1.35,M.steelDark,0,.68,0);
-  box(g,length,.08,1.28,M.steel,0,.89,0);
-  box(g,length*.92,.035,.025,M.green,0,1.115,-.72);
-  for(const side of [-.69,.69]) {
+  const width=output?2.4:1.35;
+  const edge=width/2-.055;
+  box(g,length,.34,width,M.steelDark,0,.68,0);
+  box(g,length,.08,width-.08,M.steel,0,.89,0);
+  for(const side of [-edge,edge]) {
+    box(g,length*.92,.035,.025,M.green,0,1.115,side);
     box(g,length,.17,.09,M.steelDark,0,1.02,side);
     box(g,length,.035,.1,M.steelLight,0,1.12,side);
   }
   const rollers=[];
   const n=Math.floor(length/.25);
   for(let i=0;i<=n;i++) {
-    rollers.push(cylinder(g,.065,1.23,M.steelLight,-length/2+i*length/n,.94,0,Math.PI/2));
+    rollers.push(cylinder(g,.065,width-.18,M.steelLight,-length/2+i*length/n,.94,0,Math.PI/2));
   }
-  for(const px of [-length/2+.2,0,length/2-.2]) for(const pz of [-.5,.5]) {
+  for(const px of [-length/2+.2,0,length/2-.2]) for(const pz of [-width/2+.16,width/2-.16]) {
     box(g,.12,.62,.12,M.steelDark,px,.31,pz);
     box(g,.28,.06,.25,M.rubber,px,.04,pz);
   }
@@ -83,9 +88,9 @@ function createConveyor(x,z,length,output=false) {
 }
 function buildPallet() {
   const g=new THREE.Group(); scene.add(g);
-  box(g,2.28,.14,1.62,M.wood,0,.12,0);
-  for(let z of [-.55,0,.55]) box(g,2.12,.13,.22,M.woodLight,0,.25,z);
-  for(let x of [-.88,0,.88]) box(g,.12,.08,1.42,M.wood,x,.07,0);
+  box(g,2.28,.14,2.08,M.wood,0,.12,0);
+  for(let z of [-.68,0,.68]) box(g,2.12,.13,.22,M.woodLight,0,.25,z);
+  for(let x of [-.88,0,.88]) box(g,.12,.08,1.88,M.wood,x,.07,0);
   return {group:g,boxes:[]};
 }
 function buildRobot() {
@@ -165,11 +170,16 @@ function beltPosition(progress) {
   return V(-3.75-2.4+progress*4.8,1.03,.45);
 }
 function palletTarget(index) {
-  const layer=Math.floor(index/6), slot=index%6;
-  // Cada camada: duas fileiras com três caixas (3 x 2).
-  const positions=[[-.72,-.36],[0,-.36],[.72,-.36],[-.72,.36],[0,.36],[.72,.36]];
-  const [x,z]=positions[slot];
-  return V(1.55+x,.32+layer*.52,1.75+z);
+  const layer=Math.floor(index/LAYER_CAPACITY);
+  const slot=index%LAYER_CAPACITY;
+  const positions=[
+    [-.68,-.62],[0,-.62],[.68,-.62],
+    [-.68,0],[0,0],[.68,0],
+    [-.68,.62],[0,.62],[.68,.62]
+  ];
+  const finalLayer=[[-.68,0],[0,0],[.68,0]];
+  const [x,z]=(layer===3?finalLayer:positions)[slot];
+  return V(1.55+x,.32+layer*.50,1.75+z);
 }
 function updateQueue(dt) {
   const waiting=queue.filter(q=>q.mesh!==activeBox).sort((a,b)=>b.progress-a.progress);
@@ -212,7 +222,7 @@ function completeBox() {
   activeBox.rotation.set(0,0,0);
   activeBox.parent.remove(activeBox);
   pallet.group.add(activeBox);
-  activeBox.position.set(target.x-pallet.group.position.x,target.y,target.z-pallet.group.position.z);
+  activeBox.position.set(target.x-pallet.group.position.x,target.y-pallet.group.position.y,target.z-pallet.group.position.z);
   activeBox.rotation.set(0,0,0);
   pallet.boxes.push(activeBox);
   queue=queue.filter(q=>q.mesh!==activeBox);
@@ -224,7 +234,7 @@ function completeBox() {
   addHistory("Caixa "+state.boxes+" posicionada");
   if(state.boxes%PER_PALLET===0) {
     addHistory("Palete "+(state.boxes/PER_PALLET)+" completo — encaminhado para saída");
-    palletTransfer={elapsed:0,group:pallet.group,fromX:1.55,toX:6.0,fromY:0,toY:.96};
+    palletTransfer={elapsed:0,group:pallet.group,fromX:1.55,toX:6.0,fromY:0,toY:1.02};
     pallet=null;
   }
   renderDashboard();
@@ -237,30 +247,43 @@ function completeBox() {
 function updateCycle(dt) {
   if(!state.running||state.failure) return;
   if(!activeBox) { beginCycle(); return; }
-  cycle+=dt*(.38+state.speed/100*.34);
+  cycle+=dt*(.72+state.speed/100*.55);
   const t=Math.min(cycle,1);
   const source=beltPosition(.94);
   const target=palletTarget(state.boxes%PER_PALLET);
   const start=V(source.x,source.y+1.05,source.z);
   const pick=V(source.x,source.y+.48,source.z);
-  const carry=V(target.x,2.85,target.z);
+  const carry=V(target.x,Math.max(2.85,target.y+1.05),target.z);
   const drop=V(target.x,target.y+.48,target.z);
-  let point, boxPoint, closed=false;
-  if(t<.2) {
-    const p=t/.2; point=start.clone().lerp(pick,p); boxPoint=source;
-  } else if(t<.32) {
-    point=pick; boxPoint=source; closed=true;
-  } else if(t<.82) {
-    const p=(t-.32)/.5;
-    point=cubic(pick,V(-.3,3.2,.2),V(target.x-.6,3.25,target.z),carry,p);
-    boxPoint=point.clone().add(V(0,-.48,0)); closed=true;
-  } else {
-    const p=(t-.82)/.18;
+  let point, boxPoint=source, closed=false;
+
+  if(t<.15) {
+    const p=t/.15;
+    point=start.clone().lerp(pick,p);
+  } else if(t<.22) {
+    point=pick;
+    closed=true;
+  } else if(t<.66) {
+    const p=(t-.22)/.44;
+    point=cubic(pick,V(-.3,3.25,.2),V(target.x-.6,3.35,target.z),carry,p);
+    boxPoint=point.clone().add(V(0,-.48,0));
+    closed=true;
+  } else if(t<.78) {
+    const p=(t-.66)/.12;
     point=carry.clone().lerp(drop,p);
-    boxPoint=point.clone().add(V(0,-.48,0)); closed=true;
+    boxPoint=point.clone().add(V(0,-.48,0));
+    closed=true;
+  } else if(t<.86) {
+    point=drop;
+    boxPoint=V(target.x,target.y,target.z);
+  } else {
+    const p=(t-.86)/.14;
+    point=cubic(drop,V(target.x,2.8,target.z),V(-.7,3.15,.1),HOME_POINT,p);
+    boxPoint=V(target.x,target.y,target.z);
   }
+
   updateRobotForPoint(point,closed);
-  if(t>=.32) activeBox.position.copy(boxPoint);
+  if(t>=.22) activeBox.position.copy(boxPoint);
   if(t>=1) completeBox();
 }
 function updatePalletTransfer(dt) {
@@ -329,8 +352,8 @@ function animate() {
   const dt=Math.min(clock.getDelta(),.04);
   if(state.running&&!state.failure) {
     const feeding=!activeBox&&!palletTransfer&&queue.some(q=>q.progress<.94);
-    if(feeding) beltIn.rollers.forEach(r=>r.rotation.z+=dt*1.8);
-    if(palletTransfer) beltOut.rollers.forEach(r=>r.rotation.z+=dt*2.0);
+    if(feeding) beltIn.rollers.forEach(r=>r.rotation.z+=dt*2.8);
+    if(palletTransfer) beltOut.rollers.forEach(r=>r.rotation.z+=dt*3.0);
   }
   updateQueue(dt); updateCycle(dt); updatePalletTransfer(dt);
   if(controls) controls.update();
@@ -413,7 +436,7 @@ function renderDashboard() {
   if($("palletPosition")) $("palletPosition").textContent=current+" / 30 caixas";
   if($("palletCount")) $("palletCount").textContent=String(current).padStart(2,"0");
   if($("palletPct")) $("palletPct").textContent=Math.round(current/30*100)+"%";
-  if($("layer")) $("layer").textContent=current>=30?"PALETE COMPLETO":"CAMADA "+Math.min(5,Math.floor(current/6)+1);
+  if($("layer")) $("layer").textContent=current>=30?"PALETE COMPLETO":"CAMADA "+Math.min(PALLET_LAYERS,Math.floor(current/LAYER_CAPACITY)+1);
   if($("positionGrid")) [...$("positionGrid").children].forEach((el,i)=>el.classList.toggle("filled",i<current));
   if($("elapsed")) $("elapsed").textContent=String(Math.floor(state.seconds/60)).padStart(2,"0")+":"+String(state.seconds%60).padStart(2,"0");
   if($("cycleTime")) $("cycleTime").textContent=state.running?"Ciclo automático":"Ciclo: —";
