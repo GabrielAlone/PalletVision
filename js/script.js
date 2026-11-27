@@ -5,7 +5,7 @@ const $ = id => document.getElementById(id);
 const TOTAL = 135, PER_PALLET = 27;
 const state = {
   running:false, warning:false, failure:false, boxes:0, seconds:0,
-  speed:90, alerts:[], history:[], elapsed:0
+  speed:90, alerts:[], history:[], elapsed:0, stops:0
 };
 
 let scene, camera, renderer, controls, clock;
@@ -436,13 +436,33 @@ function renderEquipment() {
 function updateEquipment() {
   for(let i=0;i<5;i++) {
     const el=$("equip"+i);if(!el)continue;
-    const off=state.failure&&i===3;el.textContent=off?"● OFFLINE":"● ONLINE";el.classList.toggle("off",off);
+    const off=state.failure&&(i===3||i===4);
+    const attention=state.warning&&i===2;
+    el.textContent=off?"● OFFLINE":attention?"● ATENÇÃO":"● ONLINE";
+    el.classList.toggle("off",off);
+    el.classList.toggle("attention",attention);
   }
-  if($("onlineCount")) $("onlineCount").textContent=state.failure?"4 ONLINE":"5 ONLINE";
+  if($("onlineCount")) $("onlineCount").textContent=state.failure?"3 ONLINE":state.warning?"4 ONLINE · 1 ATENÇÃO":"5 ONLINE";
 }
 function renderGrid() {
   const grid=$("positionGrid");if(!grid)return;grid.innerHTML="";
-  for(let i=0;i<PER_PALLET;i++)grid.append(document.createElement("i"));
+  for(let layer=0;layer<PALLET_LAYERS;layer++) {
+    const section=document.createElement("div");
+    section.className="pallet-layer";
+    const head=document.createElement("div");
+    head.className="pallet-layer-head";
+    const name=document.createElement("span");
+    name.textContent="CAMADA "+(layer+1);
+    const count=document.createElement("b");
+    count.className="layer-count";
+    count.textContent="0 / 9";
+    head.append(name,count);
+    const slots=document.createElement("div");
+    slots.className="layer-slots";
+    for(let i=0;i<LAYER_CAPACITY;i++) slots.append(document.createElement("i"));
+    section.append(head,slots);
+    grid.append(section);
+  }
 }
 function renderDashboard() {
   const boxes=state.boxes, pct=boxes/TOTAL*100, done=Math.floor(boxes/PER_PALLET);
@@ -460,7 +480,17 @@ function renderDashboard() {
   if($("palletCount")) $("palletCount").textContent=String(current).padStart(2,"0");
   if($("palletPct")) $("palletPct").textContent=Math.round(current/PER_PALLET*100)+"%";
   if($("layer")) $("layer").textContent=current>=PER_PALLET?"PALETE COMPLETO":"CAMADA "+Math.min(PALLET_LAYERS,Math.floor(current/LAYER_CAPACITY)+1);
-  if($("positionGrid")) [...$("positionGrid").children].forEach((el,i)=>el.classList.toggle("filled",i<current));
+  if($("positionGrid")) {
+    [...$("positionGrid").querySelectorAll(".pallet-layer")].forEach((layerEl,layerIndex)=>{
+      const amount=Math.max(0,Math.min(LAYER_CAPACITY,current-layerIndex*LAYER_CAPACITY));
+      const count=layerEl.querySelector(".layer-count");
+      if(count) count.textContent=amount+" / 9";
+      layerEl.classList.toggle("complete",amount===LAYER_CAPACITY);
+      [...layerEl.querySelectorAll(".layer-slots i")].forEach((slot,i)=>slot.classList.toggle("filled",i<amount));
+    });
+  }
+  if($("stopCount")) $("stopCount").textContent=state.stops+" registradas";
+  updateProductionMetrics();
   if($("elapsed")) $("elapsed").textContent=String(Math.floor(state.seconds/60)).padStart(2,"0")+":"+String(state.seconds%60).padStart(2,"0");
   if($("cycleTime")) $("cycleTime").textContent=state.running?"Ciclo automático":"Ciclo: —";
   const status=$("statusText"),msg=$("statusMessage"),light=$("statusLight");
@@ -490,14 +520,36 @@ function renderDashboard() {
   if($("updated")) $("updated").textContent=timeString();
   updateEquipment();renderAlerts();
 }
+function updateProductionMetrics() {
+  const rate=state.seconds>0?(state.boxes/(state.seconds/60)):0;
+  const average=state.boxes>0?state.seconds/state.boxes:0;
+  if($("throughput")) $("throughput").textContent=rate.toFixed(1).replace(".",",");
+  if($("averageCycle")) $("averageCycle").textContent=state.boxes?average.toFixed(1).replace(".",",")+" s/caixa":"— s/caixa";
+}
+function acknowledgeAlert() {
+  const hadOccurrence=state.warning||state.failure;
+  if(state.failure) state.running=false;
+  state.warning=false;
+  state.failure=false;
+  if(hadOccurrence) {
+    addHistory("Ocorrência reconhecida pelo operador");
+    addAlert("normal","Ocorrência reconhecida","O aviso foi retirado pelo operador. Verifique a linha antes de reiniciar.");
+  }
+  renderDashboard();
+}
 function startProcess() {
   if(state.failure||state.boxes>=TOTAL)return;
   state.running=true;state.warning=false;addHistory("Ciclo automático iniciado");
   addAlert("normal","Processo iniciado","Esteira de entrada e robô em operação.");renderDashboard();
 }
-function pauseProcess(){state.running=false;addHistory("Processo pausado pelo operador");renderDashboard();}
+function pauseProcess(){
+  if(state.running) state.stops++;
+  state.running=false;
+  addHistory("Processo pausado pelo operador");
+  renderDashboard();
+}
 function resetProcess() {
-  state.running=false;state.warning=false;state.failure=false;state.boxes=0;state.seconds=0;state.elapsed=0;
+  state.running=false;state.warning=false;state.failure=false;state.boxes=0;state.seconds=0;state.elapsed=0;state.stops=0;
   cycle=0;activeBox=null;
   if(palletTransfer && palletTransfer.group) scene.remove(palletTransfer.group);
   palletTransfer=null;pallets=[];
@@ -513,6 +565,7 @@ function simulateWarning() {
   addHistory("Alerta de atenção simulado");renderDashboard();
 }
 function simulateFailure() {
+  if(state.running) state.stops++;
   state.running=false;state.failure=true;
   addAlert("failure","Falha no robô paletizador","Movimento interrompido pelo operador.");
   addHistory("Falha simulada no robô paletizador");renderDashboard();
@@ -526,6 +579,7 @@ function tick() {
   lastTick=now;
   if($("clock")) $("clock").textContent=timeString();
   if($("elapsed")) $("elapsed").textContent=String(Math.floor(state.seconds/60)).padStart(2,"0")+":"+String(state.seconds%60).padStart(2,"0");
+  updateProductionMetrics();
 }
 function init() {
   renderGrid();renderEquipment();addHistory("Sistema de monitoramento inicializado");
@@ -533,6 +587,7 @@ function init() {
   $("bReset").addEventListener("click",resetProcess);
   $("bWarn").addEventListener("click",simulateWarning);
   $("bFail").addEventListener("click",simulateFailure);
+  if($("bAcknowledge")) $("bAcknowledge").addEventListener("click",acknowledgeAlert);
   if($("speed")) $("speed").addEventListener("input",e=>{
     state.speed=Number(e.target.value);if($("speedValue"))$("speedValue").textContent=state.speed+"%";renderDashboard();
   });
