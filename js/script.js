@@ -238,10 +238,10 @@ function updateCycle(dt) {
   const t=Math.min(cycle,1);
   const source=beltPosition(.94);
   const target=palletTarget(state.boxes%PER_PALLET);
-  const start=V(source.x,source.y+.27,source.z);
-  const pick=V(source.x,2.25,source.z);
+  const start=V(source.x,source.y+.48,source.z);
+  const pick=V(source.x,source.y+.48,source.z);
   const carry=V(target.x,2.65,target.z);
-  const drop=V(target.x,target.y+.25,target.z);
+  const drop=V(target.x,target.y+.48,target.z);
   let point, boxPoint, closed=false;
   if(t<.2) {
     const p=t/.2; point=start.clone().lerp(pick,p); boxPoint=source;
