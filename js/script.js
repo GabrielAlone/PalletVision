@@ -32,6 +32,7 @@ let fingerLeft, fingerRight;
 let conveyorBoxes = [];
 let palletObjects = [];
 let activeBox = null;
+let palletTransfer = null;
 
 let cycle = 0;
 let lastTime = Date.now();
@@ -246,8 +247,8 @@ function createConveyor(x, z, rotation = 0, length = 5.2) {
 
   // Laterais azuis
   for (const side of [-0.69, 0.69]) {
-    cube(group, length, 0.2, 0.1, M.blue, 0, 1.08, side);
-    cube(group, length, 0.035, 0.11, M.blueLight, 0, 1.19, side);
+    cube(group, length, 0.2, 0.1, M.steel, 0, 1.08, side);
+    cube(group, length, 0.035, 0.11, M.steelLight, 0, 1.19, side);
   }
 
   // Rolos transversais
@@ -307,10 +308,9 @@ function beltPoint(belt, progress) {
 }
 
 function buildConveyors() {
+  // Alimentação da célula e saída de paletes completos.
   beltOne = createConveyor(-3.1, 0, 0, 5.2);
-
-  // Segunda esteira cruzada, alimentando a área de trabalho
-  beltTwo = createConveyor(0.5, -3.15, Math.PI / 2, 5.1);
+  beltTwo = createConveyor(5.2, 1.8, 0, 4.2);
 }
 
 /* =====================================================
@@ -338,59 +338,27 @@ function createCrate(parent, x = 0, y = 0, z = 0, scale = 1) {
 }
 
 function spawnBeltBoxes() {
-  conveyorBoxes.forEach(item => {
-    scene.remove(item.mesh);
-  });
-
+  conveyorBoxes.forEach(item => scene.remove(item.mesh));
   conveyorBoxes = [];
-
-  [beltOne, beltTwo].forEach((belt, beltIndex) => {
-    for (let i = 0; i < 5; i++) {
-      const mesh = createCrate(scene, 0, 0, 0, 0.82);
-
-      conveyorBoxes.push({
-        mesh,
-        belt: beltIndex,
-        progress: 0.08 + i * 0.18,
-        speed: 0.095 + (i % 2) * 0.012
-      });
-    }
-  });
+  for (let i = 0; i < 4; i++) {
+    const mesh = createCrate(scene, 0, 0, 0, 0.82);
+    conveyorBoxes.push({ mesh, belt: 0, progress: 0.12 + i * 0.19, speed: 0.105 });
+  }
 }
 
 function updateConveyorBoxes(dt) {
+  if (!beltOne) return;
+  const queue = conveyorBoxes.filter(item => item.belt === 0 && item.mesh !== activeBox).sort((a,b) => b.progress-a.progress);
+  if (state.running && !state.failure && !activeBox && queue.length) {
+    queue[0].progress = Math.min(0.88, queue[0].progress + dt * queue[0].speed * (state.speed / 70));
+  }
   conveyorBoxes.forEach(item => {
-    if (item.mesh === activeBox) return;
-
-    if (state.running && !state.failure) {
-      item.progress += dt * item.speed * (state.speed / 70);
-    }
-
-    if (item.progress > 0.94) {
-      item.progress = 0.02;
-    }
-
-    const belt = item.belt === 0 ? beltOne : beltTwo;
-
+    const belt = beltOne;
     belt.group.updateMatrixWorld(true);
-
     const p = beltPoint(belt, item.progress);
-
     item.mesh.position.set(p.x, p.y, p.z);
   });
 }
-
-/* =====================================================
-   PALETES
-===================================================== */
-
-const palletPositions = [
-  [2.2, 1.8],
-  [4.3, 1.8],
-  [4.3, -1.0],
-  [2.2, -3.8],
-  [-1.8, 3.0]
-];
 
 function createPallet(x, z, index) {
   const group = new THREE.Group();
@@ -420,9 +388,9 @@ function createPallet(x, z, index) {
       const crate = createCrate(
         group,
         -0.52 + (position % 3) * 0.52,
-        0.34 + layer * 0.49,
+        0.55 + layer * 0.49,
         -0.32 + Math.floor(position / 3) * 0.64,
-        0.7
+        0.82
       );
 
       crate.visible = false;
@@ -433,6 +401,7 @@ function createPallet(x, z, index) {
   // Identificação do palete
   cube(group, 0.8, 0.2, 0.05, M.dark, 0, 0.5, 0.82);
 
+  group.visible = index === 0;
   palletObjects.push({ group, slots, index });
 }
 
@@ -538,7 +507,7 @@ function buildRobot() {
     0.075,
     0.3,
     0.1,
-    M.yellow,
+    M.steelLight,
     -0.16,
     -0.32,
     0
@@ -549,7 +518,7 @@ function buildRobot() {
     0.075,
     0.3,
     0.1,
-    M.yellow,
+    M.steelLight,
     0.16,
     -0.32,
     0
@@ -671,40 +640,20 @@ function getTargetForBox() {
   const [x, z] = getCurrentPalletPosition();
 
   const position = state.boxes % PER_PALLET;
-
-  return new THREE.Vector3(
-    x - 0.52 + (position % 3) * 0.52,
-    0.55 + Math.floor(position / 5) * 0.49,
-    z - 0.32 + Math.floor((position % 5) / 3) * 0.64
-  );
+  const slotInLayer = position % 5;
+  const layer = Math.floor(position / 5);
+  const column = slotInLayer % 3;
+  const row = Math.floor(slotInLayer / 3);
+  return new THREE.Vector3(x - 0.52 + column * 0.52, 0.55 + layer * 0.49, z - 0.32 + row * 0.64);
 }
 
 function startNewCycle() {
   if (activeBox || !state.running || state.failure) return;
-
-  // Alterna entre as duas esteiras
-  selectedBelt = boxCounter % 2;
-
-  const belt = selectedBelt === 0 ? beltOne : beltTwo;
-
-  belt.group.updateMatrixWorld(true);
-
-  const candidates = conveyorBoxes
-    .filter(item => item.belt === selectedBelt)
-    .sort((a, b) => b.progress - a.progress);
-
-  if (!candidates.length) return;
-
-  const chosen = candidates[0];
-
-  if (chosen.progress < 0.45) return;
-
-  activeBox = chosen.mesh;
-  chosen.progress = 0.98;
-  chosen.mesh.userData.isActive = true;
-
+  selectedBelt = 0;
+  const candidates = conveyorBoxes.filter(item => item.belt === 0).sort((a,b) => b.progress-a.progress);
+  if (!candidates.length || candidates[0].progress < 0.87) return;
+  activeBox = candidates[0].mesh;
   cycle = 0;
-  boxCounter++;
 }
 
 function updatePickAndPlace(dt) {
@@ -772,25 +721,31 @@ function updatePickAndPlace(dt) {
     activeBox.position.copy(target);
     activeBox.rotation.set(0, 0, 0);
 
-    const item = conveyorBoxes.find(
-      item => item.mesh === activeBox
-    );
-
-    if (item) {
-      item.mesh = createCrate(scene, 0, 0, 0, 0.82);
-      item.progress = 0.02;
+    const itemIndex = conveyorBoxes.findIndex(item => item.mesh === activeBox);
+    if (itemIndex !== -1) {
+      scene.remove(conveyorBoxes[itemIndex].mesh);
+      conveyorBoxes.splice(itemIndex, 1);
     }
 
     scene.remove(activeBox);
     activeBox = null;
 
     state.boxes++;
-
+    if (state.boxes < TOTAL) {
+      const fresh = createCrate(scene, 0, 0, 0, 0.82);
+      conveyorBoxes.push({ mesh: fresh, belt: 0, progress: 0.08, speed: 0.105 });
+    }
     updatePallets();
     addHistory("Caixa " + state.boxes + " posicionada");
 
     if (state.boxes % PER_PALLET === 0) {
-      addHistory("Palete " + (state.boxes / PER_PALLET) + " concluído");
+      const finishedIndex = state.boxes / PER_PALLET - 1;
+      addHistory("Palete " + (finishedIndex + 1) + " concluído — saída automática");
+      palletTransfer = { index: finishedIndex, elapsed: 0, fromX: 2.2, toX: 7.3 };
+      if (palletObjects[finishedIndex + 1]) {
+        palletObjects[finishedIndex + 1].group.position.set(2.2, 0, 1.8);
+        palletObjects[finishedIndex + 1].group.visible = true;
+      }
     }
 
     renderDashboard();
@@ -922,19 +877,31 @@ function resizeScene() {
   renderer.setSize(host.clientWidth, host.clientHeight);
 }
 
+function animatePalletTransfer(dt) {
+  if (!palletTransfer) return;
+  palletTransfer.elapsed += dt;
+  const t = Math.min(1, palletTransfer.elapsed / 2.2);
+  const eased = t * t * (3 - 2 * t);
+  const pallet = palletObjects[palletTransfer.index];
+  if (pallet) pallet.group.position.x = THREE.MathUtils.lerp(palletTransfer.fromX, palletTransfer.toX, eased);
+  if (beltTwo) beltTwo.rollers.forEach(roller => { roller.rotation.z += dt * 4.2; });
+  if (t >= 1) {
+    if (pallet) pallet.group.visible = false;
+    palletTransfer = null;
+  }
+}
+
 function animate() {
   requestAnimationFrame(animate);
 
   const dt = Math.min(clock.getDelta(), 0.04);
+  animatePalletTransfer(dt);
 
   if (state.running && !state.failure) {
     beltOne.rollers.forEach(roller => {
       roller.rotation.z += dt * 3.5;
     });
 
-    beltTwo.rollers.forEach(roller => {
-      roller.rotation.z += dt * 3.5;
-    });
   }
 
   updateConveyorBoxes(dt);
@@ -1350,10 +1317,11 @@ function resetProcess() {
   cycle = 0;
   boxCounter = 0;
 
-  palletObjects.forEach(pallet => {
-    pallet.slots.forEach(crate => {
-      crate.visible = false;
-    });
+  palletTransfer = null;
+  palletObjects.forEach((pallet, index) => {
+    pallet.group.position.set(2.2, 0, 1.8);
+    pallet.group.visible = index === 0;
+    pallet.slots.forEach(crate => { crate.visible = false; });
   });
 
   state.alerts = [];

@@ -25,7 +25,7 @@ html {
 
 body {
   font-family: Inter, Arial, sans-serif;
-  background: radial-gradient(ellipse at 50% -25%, #1b3548 0, transparent 55%), var(--bg);
+  background: radial-gradient(ellipse at 50% -25%, #263b49 0, transparent 55%), var(--bg);
   color: var(--text);
   min-height: 100vh;
 }
@@ -810,4 +810,46 @@ footer {
   .scene-frame { height: 320px; }
   .scene-legend { gap: 8px; font-size: 8px; }
   .metric b { font-size: 27px; }
+}
+
+/* Refinamento visual da estação */
+.card {
+  background: linear-gradient(145deg, #1b2b36, #101b24);
+  border-color: #3a4b56;
+}
+.kpi {
+  border-top-color: #a9b5bb;
+}
+.progress i {
+  background: linear-gradient(90deg, #7c929d, #d1d9dd);
+}
+.position-grid i.filled {
+  background: linear-gradient(145deg, #8799a2, #536771);
+  border-color: #c2cdd2;
+  box-shadow: 0 0 8px #c2cdd233;
+}
+.scene-frame {
+  background: linear-gradient(145deg, #89979d, #58666e);
+  border-color: #64747c;
+}
+.scene-legend .robot-swatch,
+.scene-legend .belt-swatch {
+  background: #aeb9bf;
+}
+.scene-legend .fence-swatch {
+  background: #e0bd4b;
+}
+.btn.primary {
+  background: #647d89;
+  border-color: #9aabb3;
+}
+.btn.primary:hover {
+  background: #78919d;
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    animation-duration: .01ms !important;
+    transition-duration: .01ms !important;
+  }
 }
