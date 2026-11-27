@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>PALLETINOVA | Monitoramento Industrial</title>
+  <meta name="description" content="Painel de acompanhamento da célula automatizada de paletização PAL-01.">
+  <title>PALLETINOVA | Controle de Paletização</title>
   <link rel="stylesheet" href="css/style.css">
 
   <!-- Biblioteca responsável pelo modelo 3D -->
@@ -21,7 +22,7 @@
     </span>
   </a>
 
-  <nav>
+  <nav aria-label="Navegação principal">
     <a href="#dashboard">Dashboard</a>
     <a href="#producao">Produção</a>
     <a href="#estacao">Paletização</a>
@@ -36,9 +37,9 @@
 
   <section class="page-heading">
     <div>
-      <span class="eyebrow">CENTRO DE CONTROLE / LINHA 01</span>
-      <h1>Painel de paletização</h1>
-      <p>Monitoramento em tempo real da célula automatizada</p>
+      <span class="eyebrow">OPERAÇÃO INDUSTRIAL / CÉLULA PAL-01</span>
+      <h1>Controle da paletização</h1>
+      <p>Acompanhamento da alimentação, movimentação do robô e formação dos paletes</p>
     </div>
 
     <div class="actions">
@@ -68,8 +69,8 @@
     </div>
 
     <div class="status-item">
-      <small>COMUNICAÇÃO</small>
-      <b class="green-text">● CONECTADO</b>
+      <small>AMBIENTE</small>
+      <b class="green-text">● SIMULAÇÃO LOCAL</b>
     </div>
 
     <span class="sim-tag">SIMULAÇÃO</span>
@@ -91,7 +92,7 @@
     </article>
 
     <article class="card kpi">
-      <span>Rendimento da linha</span>
+      <span>Velocidade configurada</span>
       <div class="metric">
         <b id="efficiency">—</b>
         <small>%</small>
@@ -134,8 +135,8 @@
 
       <div class="card-heading">
         <div>
-          <span class="eyebrow">CÉLULA INDUSTRIAL EM 3D</span>
-          <h2>Estação automatizada de paletização</h2>
+          <span class="eyebrow">VISÃO DA CÉLULA / MODELO 3D</span>
+          <h2>Estação de paletização PAL-01</h2>
         </div>
         <span class="state-chip" id="sceneState">● EM ESPERA</span>
       </div>
@@ -161,7 +162,7 @@
       </div>
 
       <div class="scene-hint">
-        Arraste para girar a câmera · Role para aproximar · Duplo clique para voltar à visão inicial
+        Arraste para observar a célula · Role para aproximar · Duplo clique para restaurar a câmera
       </div>
 
       <div class="process-info">
@@ -293,7 +294,7 @@
   </section>
 
   <footer>
-    PALLETINOVA · Protótipo de monitoramento industrial · Dados simulados, sem conexão com CLP real
+    PALLETINOVA · Célula PAL-01 · Ambiente demonstrativo com dados simulados
   </footer>
 
 </main>
