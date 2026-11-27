@@ -1145,3 +1145,13 @@ footer {
   border-color: #62e2bd;
   box-shadow: 0 0 9px #00c58b35;
 }
+
+
+/* Grade compacta: 27 posições em 3 camadas completas */
+.position-grid { grid-template-columns:repeat(3,minmax(0,1fr)); gap:3px; margin:12px 0; max-width:260px; }
+.position-grid i { aspect-ratio:1.75/1; max-height:27px; border-radius:3px; border-color:#59666c; background:linear-gradient(145deg,#20272b,#111719); }
+.position-grid i.filled { background:linear-gradient(145deg,#aab4b9,#66747b); border-color:#d4dcdf; box-shadow:0 0 5px #b7c2c733; }
+.scene-legend .robot-swatch { background:#aab4b9; }
+.scene-legend .belt-swatch { background:#168eaa; }
+.scene-legend .box-swatch { background:#c18b4d; }
+.scene-legend .fence-swatch { background:#e0ad3e; }
