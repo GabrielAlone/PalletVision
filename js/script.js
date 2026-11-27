@@ -2,7 +2,7 @@
 "use strict";
 
 const $ = id => document.getElementById(id);
-const TOTAL = 150, PER_PALLET = 30;
+const TOTAL = 135, PER_PALLET = 27;
 const state = {
   running:false, warning:false, failure:false, boxes:0, seconds:0,
   speed:90, alerts:[], history:[], elapsed:0
@@ -15,20 +15,21 @@ let robotRig, upperLink, lowerLink, wrist, fingerL, fingerR;
 let sensorLamp, robotLamp;
 
 const C = {
-  floor:0x737d80, floorLine:0x4c575b, wall:0x30393d,
-  steel:0x8b969b, steelLight:0xc2c9cc, steelDark:0x3b454a,
-  rubber:0x252b2e, robot:0x929da2, robotDark:0x515c62,
-  box:0xb9824b, boxTop:0xd4a36d, tape:0x8e5e32,
-  wood:0x8a603b, woodLight:0xb18555, green:0x00c58b,
-  amber:0xd59a43, red:0xd84d4d, white:0xe7ecee
+  floor:0x687277, floorLine:0x3c474c, wall:0x252d31,
+  steel:0x8d999f, steelLight:0xd2dadd, steelDark:0x252c30,
+  rubber:0x171c1f, robot:0x9ba5aa, robotDark:0x20272b,
+  box:0xc18b4d, boxTop:0xe0b36f, tape:0x81552d,
+  wood:0x765334, woodLight:0xa77b4d, green:0x00c58b,
+  blue:0x168eaa, amber:0xe0ad3e, red:0xd84d4d, white:0xe7ecee
 };
 const LAYER_CAPACITY = 9;
-const PALLET_LAYERS = 4;
+const PALLET_LAYERS = 3;
 const material = (color, metalness=.25, roughness=.55) =>
   new THREE.MeshStandardMaterial({color,metalness,roughness});
 const M = Object.fromEntries(Object.entries(C).map(([k,v])=>[k,material(v)]));
 const V = (x,y,z)=>new THREE.Vector3(x,y,z);
 const HOME_POINT = V(-.85,2.38,.05);
+const ARM_SEGMENT_LENGTH = 1.35;
 
 function mesh(parent, geo, mat, x=0,y=0,z=0) {
   const m=new THREE.Mesh(geo,mat); m.position.set(x,y,z);
@@ -52,25 +53,25 @@ function addLabel(text,x,y,z,scale=1) {
 }
 function createCrate(parent) {
   const g=new THREE.Group(); parent.add(g);
-  box(g,.68,.48,.62,M.box,0,.24,0);
-  box(g,.69,.035,.63,M.boxTop,0,.49,0);
-  box(g,.055,.485,.635,M.tape,-.22,.245,0);
-  box(g,.055,.485,.635,M.tape,.22,.245,0);
-  box(g,.09,.025,.64,M.tape,0,.515,0);
-  box(g,.24,.15,.018,M.boxTop,0,.29,.318);
-  box(g,.16,.02,.02,M.tape,0,.29,.332);
+  box(g,.62,.46,.56,M.box,0,.23,0);
+  box(g,.63,.035,.57,M.boxTop,0,.475,0);
+  box(g,.045,.465,.575,M.tape,-.2,.235,0);
+  box(g,.045,.465,.575,M.tape,.2,.235,0);
+  box(g,.075,.022,.58,M.tape,0,.505,0);
+  box(g,.22,.13,.018,M.boxTop,0,.28,.288);
+  box(g,.14,.018,.02,M.tape,0,.28,.302);
   return g;
 }
 function createConveyor(x,z,length,output=false) {
   const g=new THREE.Group(); g.position.set(x,0,z); scene.add(g);
-  const width=output?2.4:1.35;
+  const width=output?2.4:1.55;
   const edge=width/2-.055;
   box(g,length,.34,width,M.steelDark,0,.68,0);
   box(g,length,.08,width-.08,M.steel,0,.89,0);
   for(const side of [-edge,edge]) {
-    box(g,length*.92,.035,.025,M.green,0,1.115,side);
+    box(g,length*.92,.035,.025,M.blue,0,1.115,side);
     box(g,length,.17,.09,M.steelDark,0,1.02,side);
-    box(g,length,.035,.1,M.steelLight,0,1.12,side);
+    box(g,length,.035,.1,M.blue,0,1.12,side);
   }
   const rollers=[];
   const n=Math.floor(length/.25);
@@ -89,9 +90,9 @@ function createConveyor(x,z,length,output=false) {
 }
 function buildPallet() {
   const g=new THREE.Group(); scene.add(g);
-  box(g,2.28,.14,2.08,M.wood,0,.12,0);
-  for(let z of [-.68,0,.68]) box(g,2.12,.13,.22,M.woodLight,0,.25,z);
-  for(let x of [-.88,0,.88]) box(g,.12,.08,1.88,M.wood,x,.07,0);
+  box(g,2.12,.14,1.92,M.wood,0,.12,0);
+  for(let z of [-.62,0,.62]) box(g,1.98,.13,.20,M.woodLight,0,.25,z);
+  for(let x of [-.82,0,.82]) box(g,.12,.08,1.72,M.wood,x,.07,0);
   return {group:g,boxes:[]};
 }
 function buildRobot() {
@@ -106,7 +107,9 @@ function buildRobot() {
   cylinder(base,.24,.16,M.robot,0,2.42,0);
   const shoulder=V(-.1,2.55,-.2);
   upperLink=cylinder(scene,.19,1,M.robot,0,0,0);
-  lowerLink=cylinder(scene,.145,1,M.steel,0,0,0);
+  lowerLink=cylinder(scene,.155,1,M.steelDark,0,0,0);
+  upperLink.scale.y=ARM_SEGMENT_LENGTH;
+  lowerLink.scale.y=ARM_SEGMENT_LENGTH;
   wrist=new THREE.Group(); scene.add(wrist);
   cylinder(wrist,.16,.2,M.robotDark,0,0,0);
   box(wrist,.34,.14,.3,M.steel,0,-.14,0);
@@ -115,13 +118,15 @@ function buildRobot() {
   fingerL=wrist.children[wrist.children.length-2];
   fingerR=wrist.children[wrist.children.length-1];
   box(wrist,.13,.045,.13,M.green,0,-.23,.17);
-  robotRig={shoulder,base};
+  const elbowJoint=mesh(scene,new THREE.SphereGeometry(.22,24,16),M.robotDark);
+  const wristJoint=mesh(scene,new THREE.SphereGeometry(.19,24,16),M.steelLight);
+  robotRig={shoulder,base,elbowJoint,wristJoint};
   robotLamp=mesh(base,new THREE.SphereGeometry(.075,16,12),M.green,0,1.02,.28);
 }
 function setLink(link,a,b) {
   const direction=b.clone().sub(a);
   link.position.copy(a).add(b).multiplyScalar(.5);
-  link.scale.set(1,direction.length(),1);
+  link.scale.set(1,ARM_SEGMENT_LENGTH,1);
   link.quaternion.setFromUnitVectors(V(0,1,0),direction.normalize());
 }
 function buildEnvironment() {
@@ -175,13 +180,12 @@ function palletTarget(index) {
   const layer=Math.floor(index/LAYER_CAPACITY);
   const slot=index%LAYER_CAPACITY;
   const positions=[
-    [-.68,-.62],[0,-.62],[.68,-.62],
-    [-.68,0],[0,0],[.68,0],
-    [-.68,.62],[0,.62],[.68,.62]
+    [-.64,-.58],[0,-.58],[.64,-.58],
+    [-.64,0],[0,0],[.64,0],
+    [-.64,.58],[0,.58],[.64,.58]
   ];
-  const finalLayer=[[-.68,0],[0,0],[.68,0]];
-  const [x,z]=(layer===3?finalLayer:positions)[slot];
-  return V(1.55+x,.32+layer*.50,1.75+z);
+  const [x,z]=positions[slot];
+  return V(1.55+x,.32+layer*.48,1.75+z);
 }
 function updateQueue(dt) {
   const waiting=queue.filter(q=>q.mesh!==activeBox).sort((a,b)=>b.progress-a.progress);
@@ -193,13 +197,19 @@ function updateQueue(dt) {
 }
 function updateRobotForPoint(point,close) {
   const shoulder=robotRig.shoulder;
-  const elbow=V(
-    THREE.MathUtils.lerp(shoulder.x,point.x,.48),
-    Math.max(2.0,(shoulder.y+point.y)*.5+.35),
-    THREE.MathUtils.lerp(shoulder.z,point.z,.48)
-  );
+  const axis=point.clone().sub(shoulder);
+  const distance=axis.length();
+  axis.normalize();
+  // Dois segmentos rígidos de tamanho fixo: o cotovelo articula sem esticar o braço.
+  const reference=Math.abs(axis.y)>.88?V(1,0,0):V(0,1,0);
+  const bend=new THREE.Vector3().crossVectors(axis,reference).normalize();
+  const half=Math.min(distance/2,ARM_SEGMENT_LENGTH-.02);
+  const height=Math.sqrt(Math.max(.04,ARM_SEGMENT_LENGTH*ARM_SEGMENT_LENGTH-half*half));
+  const elbow=shoulder.clone().add(point.clone().sub(shoulder).multiplyScalar(.5)).add(bend.multiplyScalar(height));
   setLink(upperLink,shoulder,elbow);
   setLink(lowerLink,elbow,point);
+  robotRig.elbowJoint.position.copy(elbow);
+  robotRig.wristJoint.position.copy(point);
   wrist.position.copy(point);
   const gap=close?.075:.16;
   fingerL.position.x=-gap; fingerR.position.x=gap;
@@ -242,14 +252,14 @@ function completeBox() {
   renderDashboard();
   if(state.boxes>=TOTAL) {
     state.running=false;
-    addHistory("Lote de 150 caixas concluído");
+    addHistory("Lote de 135 caixas concluído");
     addAlert("normal","Lote finalizado","Os cinco paletes foram concluídos.");
   }
 }
 function updateCycle(dt) {
   if(!state.running||state.failure) return;
   if(!activeBox) { beginCycle(); return; }
-  cycle+=dt*(.72+state.speed/100*.55);
+  cycle+=dt*(1.15+state.speed/100*.85);
   const t=Math.min(cycle,1);
   const source=beltPosition(.94);
   const target=palletTarget(state.boxes%PER_PALLET);
@@ -421,11 +431,11 @@ function updateEquipment() {
 }
 function renderGrid() {
   const grid=$("positionGrid");if(!grid)return;grid.innerHTML="";
-  for(let i=0;i<30;i++)grid.append(document.createElement("i"));
+  for(let i=0;i<PER_PALLET;i++)grid.append(document.createElement("i"));
 }
 function renderDashboard() {
   const boxes=state.boxes, pct=boxes/TOTAL*100, done=Math.floor(boxes/PER_PALLET);
-  const current=(palletTransfer||boxes>=TOTAL)?30:boxes%PER_PALLET;
+  const current=(palletTransfer||boxes>=TOTAL)?PER_PALLET:boxes%PER_PALLET;
   if($("kBoxes")) $("kBoxes").textContent=boxes;
   if($("productionBar")) $("productionBar").style.width=pct+"%";
   if($("productionPct")) $("productionPct").textContent=Math.round(pct)+"% concluído";
@@ -435,10 +445,10 @@ function renderDashboard() {
   if($("pallets")) $("pallets").textContent=done;
   if($("palletBar")) $("palletBar").style.width=done/5*100+"%";
   if($("currentPallet")) $("currentPallet").textContent=boxes>=TOTAL?"Lote finalizado":"Palete atual: "+(done+1);
-  if($("palletPosition")) $("palletPosition").textContent=current+" / 30 caixas";
+  if($("palletPosition")) $("palletPosition").textContent=current+" / "+PER_PALLET+" caixas";
   if($("palletCount")) $("palletCount").textContent=String(current).padStart(2,"0");
-  if($("palletPct")) $("palletPct").textContent=Math.round(current/30*100)+"%";
-  if($("layer")) $("layer").textContent=current>=30?"PALETE COMPLETO":"CAMADA "+Math.min(PALLET_LAYERS,Math.floor(current/LAYER_CAPACITY)+1);
+  if($("palletPct")) $("palletPct").textContent=Math.round(current/PER_PALLET*100)+"%";
+  if($("layer")) $("layer").textContent=current>=PER_PALLET?"PALETE COMPLETO":"CAMADA "+Math.min(PALLET_LAYERS,Math.floor(current/LAYER_CAPACITY)+1);
   if($("positionGrid")) [...$("positionGrid").children].forEach((el,i)=>el.classList.toggle("filled",i<current));
   if($("elapsed")) $("elapsed").textContent=String(Math.floor(state.seconds/60)).padStart(2,"0")+":"+String(state.seconds%60).padStart(2,"0");
   if($("cycleTime")) $("cycleTime").textContent=state.running?"Ciclo automático":"Ciclo: —";
@@ -446,7 +456,7 @@ function renderDashboard() {
   if(state.failure) {status.textContent="FALHA NO PROCESSO";msg.textContent="Operação interrompida";light.style.background="var(--red)";}
   else if(state.warning) {status.textContent="ATENÇÃO NA LINHA";msg.textContent="Verifique a ocorrência";light.style.background="var(--amber)";}
   else if(state.running) {status.textContent="PROCESSO EM OPERAÇÃO";msg.textContent="Alimentação e paletização em andamento";light.style.background="var(--green)";}
-  else {status.textContent=boxes>=TOTAL?"LOTE CONCLUÍDO":"PROCESSO PARADO";msg.textContent=boxes>=TOTAL?"150 caixas processadas":"Aguardando comando do operador";light.style.background="var(--steel-light)";}
+  else {status.textContent=boxes>=TOTAL?"LOTE CONCLUÍDO":"PROCESSO PARADO";msg.textContent=boxes>=TOTAL?"135 caixas processadas":"Aguardando comando do operador";light.style.background="var(--steel-light)";}
   if($("sceneState")) $("sceneState").textContent=state.failure?"● FALHA":state.warning?"● ATENÇÃO":state.running?"● EM OPERAÇÃO":"● EM ESPERA";
   const robotPhase=!activeBox?"Aguardando caixa na entrada":
     cycle<.15?"Aproximando a garra da caixa":
