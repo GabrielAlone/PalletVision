@@ -354,8 +354,8 @@ function renderAlerts() {
       li.append(info,tag);list.append(li);
     });
   }
-  const active=state.alerts.filter(a=>a.type!=="normal");
-  if($("alertCount")) $("alertCount").textContent=active.length+" ATIVOS";
+  const activeCount=state.failure||state.warning?1:0;
+  if($("alertCount")) $("alertCount").textContent=activeCount+" ATIVOS";
   const summary=$("alertSummary"); if(!summary)return;
   const symbol=summary.querySelector(".alert-symbol");
   if(state.failure) {
@@ -390,7 +390,7 @@ function renderGrid() {
 }
 function renderDashboard() {
   const boxes=state.boxes, pct=boxes/TOTAL*100, done=Math.floor(boxes/PER_PALLET);
-  const current=palletTransfer?25:boxes%PER_PALLET;
+  const current=(palletTransfer||boxes>=TOTAL)?25:boxes%PER_PALLET;
   if($("kBoxes")) $("kBoxes").textContent=boxes;
   if($("productionBar")) $("productionBar").style.width=pct+"%";
   if($("productionPct")) $("productionPct").textContent=Math.round(pct)+"% concluído";
