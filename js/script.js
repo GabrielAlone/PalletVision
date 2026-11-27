@@ -202,7 +202,7 @@ function updateQueue(dt) {
   const waiting=queue.filter(q=>q.mesh!==activeBox).sort((a,b)=>b.progress-a.progress);
   if(state.running&&!state.failure&&!activeBox&&!palletTransfer&&waiting.length) {
     const head=waiting[0];
-    head.progress=Math.min(.94,head.progress+dt*(.15+state.speed/100*.35));
+    head.progress=Math.min(.94,head.progress+dt*(.38*state.speed/90));
   }
   for(const item of queue) if(item.mesh!==activeBox) item.mesh.position.copy(beltPosition(item.progress));
 }
@@ -270,7 +270,7 @@ function completeBox() {
 function updateCycle(dt) {
   if(!state.running||state.failure) return;
   if(!activeBox) { beginCycle(); return; }
-  cycle+=dt*(.72+state.speed/100*.36);
+  cycle+=dt*(.95*state.speed/90);
   const t=Math.min(cycle,1);
   const source=beltPosition(.94);
   const target=palletTarget(state.boxes%PER_PALLET);
@@ -375,10 +375,11 @@ function animate() {
   const dt=Math.min(clock.getDelta(),.04);
   if(state.running&&!state.failure) {
     const feeding=!activeBox&&!palletTransfer&&queue.some(q=>q.progress<.94);
-    if(feeding) beltIn.rollers.forEach(r=>r.rotateY(dt*2.8));
-    if(palletTransfer) beltOut.rollers.forEach(r=>r.rotateY(dt*3.0));
+    if(feeding) beltIn.rollers.forEach(r=>r.rotateY(dt*2.8*state.speed/90));
+    if(palletTransfer) beltOut.rollers.forEach(r=>r.rotateY(dt*3.0*state.speed/90));
   }
   updateQueue(dt); updateCycle(dt); updatePalletTransfer(dt);
+  updateLiveProcessUI();
   if(controls) controls.update();
   renderer.render(scene,camera);
 }
@@ -464,6 +465,24 @@ function renderGrid() {
     grid.append(section);
   }
 }
+function updateLiveProcessUI() {
+  const active=state.running&&!state.failure;
+  const phase=!activeBox?'Alimentação da próxima caixa':cycle<.15?'Aproximando a garra da caixa':cycle<.22?'Prendendo a caixa':cycle<.66?'Transportando caixa até o palete':cycle<.78?'Posicionando caixa no palete':cycle<.86?'Liberando a caixa':'Retornando a garra';
+  let stage='idle', current='Aguardando início', next='Iniciar processo';
+  if(state.failure) { current='Falha: processo interrompido'; next='Reconhecer ocorrência e verificar equipamento'; }
+  else if(state.warning) { current='Atenção: verificar sensor'; next='Conferir entrada de caixas'; }
+  else if(palletTransfer) { stage='exit'; current='Expedição do palete completo'; next='Posicionar próximo palete'; }
+  else if(active) {
+    if(!activeBox) { stage='feed'; current='Alimentação da próxima caixa'; next='Coletar caixa na esteira'; }
+    else if(cycle<.22) { stage='pick'; current=phase; next='Transportar caixa até o palete'; }
+    else { stage='stack'; current=phase; next=cycle<.86?'Concluir posicionamento':'Preparar próxima coleta'; }
+  } else if(state.boxes>=TOTAL) { current='Lote concluído'; next='Imprimir relatório'; }
+  if($("currentStep")) $("currentStep").textContent=current;
+  if($("nextStep")) $("nextStep").textContent=next;
+  if($("sceneStep")) $("sceneStep").textContent=state.failure?'Operação interrompida':state.warning?'Atenção na linha':palletTransfer?'Transferindo palete completo':active?phase:'Aguardando início';
+  const stages=['feed','pick','stack','exit'];
+  stages.forEach((name,i)=>{ const el=$(['flowFeed','flowPick','flowStack','flowExit'][i]); if(!el)return; const index=stages.indexOf(stage); el.classList.toggle('active',stage===name); el.classList.toggle('done',stage!=='idle'&&index>i); });
+}
 function renderDashboard() {
   const boxes=state.boxes, pct=boxes/TOTAL*100, done=Math.floor(boxes/PER_PALLET);
   const current=(palletTransfer||boxes>=TOTAL)?PER_PALLET:boxes%PER_PALLET;
@@ -543,27 +562,33 @@ function updateProductionMetrics() {
   if($("averageCycle")) $("averageCycle").textContent=state.boxes?average.toFixed(1).replace(".",",")+" s/caixa":"— s/caixa";
 }
 function exportReport() {
-  const rows = [
-    ["RELATÓRIO DE PRODUÇÃO - PALLETINOVA"],
-    ["Data de exportação", new Date().toLocaleString("pt-BR")],
-    ["Célula", "PAL-01"], ["Origem dos dados", "Simulação local"],
-    ["Caixas posicionadas", state.boxes], ["Meta de caixas", TOTAL],
-    ["Paletes concluídos", Math.floor(state.boxes/PER_PALLET)],
-    ["Tempo de operação (segundos)", state.seconds], ["Velocidade configurada (%)", state.speed],
-    ["Paradas registradas", state.stops],
-    ["Estado atual", state.failure ? "Falha" : state.warning ? "Atenção" : state.running ? "Em operação" : state.boxes>=TOTAL ? "Lote concluído" : "Parado"],
-    [], ["HISTÓRICO DE ATIVIDADES"], ["Horário", "Evento"],
-    ...state.history.slice().reverse().map(item => [item.time, item.message]),
-    [], ["REGISTRO DE ALERTAS"], ["Horário", "Tipo", "Ocorrência", "Detalhes"],
-    ...state.alerts.slice().reverse().map(item => [item.time, item.type, item.title, item.message])
-  ];
-  const csv = "\uFEFF" + rows.map(row => row.map(value => '"' + String(value ?? "").replace(/"/g, '""') + '"').join(";")).join("\r\n");
-  const blob = new Blob([csv], {type:"text/csv;charset=utf-8;"});
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href=url; link.download="relatorio-palletinova-"+new Date().toISOString().slice(0,10)+".csv";
-  document.body.appendChild(link); link.click(); link.remove(); URL.revokeObjectURL(url);
-  addHistory("Relatório CSV exportado pelo operador");
+  const report=$("printReport");
+  const safe=value=>String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
+  const status=state.failure?'Falha':state.warning?'Atenção':state.running?'Em operação':state.boxes>=TOTAL?'Lote concluído':'Parado';
+  const history=state.history.slice().reverse().map(item=>'<tr><td>'+safe(item.time)+'</td><td>'+safe(item.message)+'</td></tr>').join('')||'<tr><td colspan="2">Nenhum evento registrado.</td></tr>';
+  const alerts=state.alerts.slice().reverse().map(item=>'<tr><td>'+safe(item.time)+'</td><td>'+safe(item.type)+'</td><td>'+safe(item.title)+'</td><td>'+safe(item.message)+'</td></tr>').join('')||'<tr><td colspan="4">Nenhuma ocorrência registrada.</td></tr>';
+  const elapsed=String(Math.floor(state.seconds/60)).padStart(2,'0')+':'+String(state.seconds%60).padStart(2,'0');
+  report.innerHTML='<header class="print-header"><div class="print-brand">PALLET VISION</div><div class="print-subtitle">RELATÓRIO TÉCNICO DE PRODUÇÃO · CÉLULA PAL-01</div></header>'+
+  '<div class="print-meta"><span><b>Emissão:</b> '+safe(new Date().toLocaleString('pt-BR'))+'</span><span><b>Origem:</b> Simulação local</span></div>'+
+  '<span class="print-status">'+safe(status)+'</span><h2>Resumo da produção</h2>'+
+  '<div class="print-kpis">'+
+  '<div class="print-kpi"><small>Caixas processadas</small><b>'+state.boxes+' / '+TOTAL+'</b></div>'+
+  '<div class="print-kpi"><small>Paletes completos</small><b>'+Math.floor(state.boxes/PER_PALLET)+' / 5</b></div>'+
+  '<div class="print-kpi"><small>Progresso do lote</small><b>'+Math.round(state.boxes/TOTAL*100)+'%</b></div>'+
+  '<div class="print-kpi"><small>Tempo de operação</small><b>'+elapsed+'</b></div>'+
+  '<div class="print-kpi"><small>Velocidade da simulação</small><b>'+state.speed+'%</b></div>'+
+  '<div class="print-kpi"><small>Paradas registradas</small><b>'+state.stops+'</b></div></div>'+
+  '<h2>Parâmetros do processo</h2><table class="print-table"><tbody>'+
+  '<tr><th>Identificação da linha</th><td>PAL-01</td></tr><tr><th>Capacidade por palete</th><td>27 caixas · 3 camadas de 3 × 3</td></tr>'+
+  '<tr><th>Capacidade do lote</th><td>135 caixas · 5 paletes</td></tr><tr><th>Condição operacional</th><td>'+safe(status)+'</td></tr>'+
+  '<tr><th>Tipo de informação</th><td>Dados simulados para demonstração acadêmica</td></tr></tbody></table>'+
+  '<h2>Histórico de atividades</h2><table class="print-table"><thead><tr><th>Horário</th><th>Evento registrado</th></tr></thead><tbody>'+history+'</tbody></table>'+
+  '<h2>Registro de ocorrências</h2><table class="print-table"><thead><tr><th>Horário</th><th>Tipo</th><th>Ocorrência</th><th>Detalhes</th></tr></thead><tbody>'+alerts+'</tbody></table>'+
+  '<div class="print-foot">PALLET VISION · Documento gerado automaticamente pelo painel de monitoramento. Os dados apresentados são simulados e não representam medições de equipamento industrial real.<br>Responsável pela operação: ____________________________________</div>';
+  report.setAttribute('aria-hidden','false');
+  addHistory('Relatório de produção preparado para impressão');
+  window.print();
+  report.setAttribute('aria-hidden','true');
 }
 function acknowledgeAlert() {
   const hadOccurrence=state.warning||state.failure;
@@ -630,9 +655,10 @@ function init() {
   $("bFail").addEventListener("click",simulateFailure);
   if($("bAcknowledge")) $("bAcknowledge").addEventListener("click",acknowledgeAlert);
   if($("speed")) $("speed").addEventListener("input",e=>{
-    state.speed=Number(e.target.value);if($("speedValue"))$("speedValue").textContent=state.speed+"%";renderDashboard();
+    state.speed=Number(e.target.value);if($("speedValue"))$("speedValue").textContent=state.speed+"%";renderDashboard();updateLiveProcessUI();
   });
   renderDashboard();
+  updateLiveProcessUI();
   try { buildScene(); } catch(err) {
     console.error(err);const error=$("sceneError");if(error){error.hidden=false;error.textContent="Falha ao iniciar a visualização 3D: "+err.message;}
   }
