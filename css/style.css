@@ -853,3 +853,14 @@ footer {
     transition-duration: .01ms !important;
   }
 }
+
+
+/* Acabamento metálico da célula industrial */
+.scene-frame {
+  background: linear-gradient(145deg, #89979d, #58666e);
+  border-color: #64747c;
+}
+.robot-swatch,
+.belt-swatch {
+  background: #aeb9bf;
+}
