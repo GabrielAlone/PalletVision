@@ -93,6 +93,9 @@ function buildRobot() {
   cylinder(base,.56,.2,M.robot,0,.35,0);
   cylinder(base,.35,.22,M.steelDark,0,.56,0);
   cylinder(base,.29,.25,M.robot,0,.78,0);
+  // Coluna estrutural liga a base ao ombro do braço, evitando aparência de garra solta.
+  cylinder(base,.19,1.55,M.robotDark,0,1.62,0);
+  cylinder(base,.24,.16,M.robot,0,2.42,0);
   const shoulder=V(-.1,2.55,-.2);
   upperLink=cylinder(scene,.19,1,M.robot,0,0,0);
   lowerLink=cylinder(scene,.145,1,M.steel,0,0,0);
@@ -307,7 +310,7 @@ function buildScene() {
   const fill=new THREE.DirectionalLight(0xdce5e8,.65); fill.position.set(8,7,-8); scene.add(fill);
   buildEnvironment();
   // Posição de repouso: mantém o braço apoiado e a garra junto ao conjunto do robô.
-  updateRobotForPoint(V(-.1,2.35,-.2),false);
+  updateRobotForPoint(V(-.85,2.38,.05),false);
   clock=new THREE.Clock();
   renderer.domElement.addEventListener("dblclick",()=>{
     camera.position.set(10,9,13); if(controls) controls.target.set(0,.8,0);
