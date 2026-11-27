@@ -167,7 +167,7 @@ function palletTarget(index) {
   // Cada camada: duas fileiras com três caixas (3 x 2).
   const positions=[[-.72,-.36],[0,-.36],[.72,-.36],[-.72,.36],[0,.36],[.72,.36]];
   const [x,z]=positions[slot];
-  return V(2.1+x,.19+layer*.50,1.75+z);
+  return V(2.1+x,.19+layer*.52,1.75+z);
 }
 function updateQueue(dt) {
   const waiting=queue.filter(q=>q.mesh!==activeBox).sort((a,b)=>b.progress-a.progress);
@@ -421,7 +421,7 @@ function renderDashboard() {
   if(state.failure) {status.textContent="FALHA NO PROCESSO";msg.textContent="Operação interrompida";light.style.background="var(--red)";}
   else if(state.warning) {status.textContent="ATENÇÃO NA LINHA";msg.textContent="Verifique a ocorrência";light.style.background="var(--amber)";}
   else if(state.running) {status.textContent="PROCESSO EM OPERAÇÃO";msg.textContent="Alimentação e paletização em andamento";light.style.background="var(--green)";}
-  else {status.textContent=boxes>=TOTAL?"LOTE CONCLUÍDO":"PROCESSO PARADO";msg.textContent=boxes>=TOTAL?"125 caixas processadas":"Aguardando comando do operador";light.style.background="var(--steel-light)";}
+  else {status.textContent=boxes>=TOTAL?"LOTE CONCLUÍDO":"PROCESSO PARADO";msg.textContent=boxes>=TOTAL?"150 caixas processadas":"Aguardando comando do operador";light.style.background="var(--steel-light)";}
   if($("sceneState")) $("sceneState").textContent=state.failure?"● FALHA":state.warning?"● ATENÇÃO":state.running?"● EM OPERAÇÃO":"● EM ESPERA";
   if($("sceneStep")) $("sceneStep").textContent=state.failure?"Operação interrompida":state.running?(activeBox?"Robô posicionando caixa":"Aguardando caixa na entrada"):"Aguardando início";
   if($("bToggle")) $("bToggle").textContent=state.running?"Ⅱ Pausar processo":"▶ Iniciar processo";
