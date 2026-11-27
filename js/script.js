@@ -169,7 +169,7 @@ function palletTarget(index) {
   // Cada camada: duas fileiras com três caixas (3 x 2).
   const positions=[[-.72,-.36],[0,-.36],[.72,-.36],[-.72,.36],[0,.36],[.72,.36]];
   const [x,z]=positions[slot];
-  return V(1.55+x,.19+layer*.52,1.75+z);
+  return V(1.55+x,.32+layer*.52,1.75+z);
 }
 function updateQueue(dt) {
   const waiting=queue.filter(q=>q.mesh!==activeBox).sort((a,b)=>b.progress-a.progress);
@@ -427,7 +427,7 @@ function renderDashboard() {
   if($("bToggle")) $("bToggle").textContent=state.running?"Ⅱ Pausar processo":"▶ Iniciar processo";
   if($("currentStep")) $("currentStep").textContent=state.running?"Ciclo de coleta e posicionamento":"Aguardando início";
   if($("nextStep")) $("nextStep").textContent=state.running?(palletTransfer?"Expedir palete completo":activeBox?"Empilhar caixa":"Alimentar estação"):state.failure?"Verificar equipamento":"Iniciar processo";
-  const flowStage=state.failure?"":palletTransfer?"exit":activeBox?"stack":state.running?"feed":"idle";
+  const flowStage=state.failure?"":palletTransfer?"exit":activeBox?(cycle<.32?"pick":"stack"):state.running?"feed":"idle";
   ["flowFeed","flowPick","flowStack","flowExit"].forEach((id,i)=>{
     const el=$(id); if(!el)return;
     const stages=["feed","pick","stack","exit"];
