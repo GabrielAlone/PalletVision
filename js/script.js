@@ -587,8 +587,9 @@ function exportReport() {
   '<div class="print-foot">PALLET VISION · Documento gerado automaticamente pelo painel de monitoramento. Os dados apresentados são simulados e não representam medições de equipamento industrial real.<br>Responsável pela operação: ____________________________________</div>';
   report.setAttribute('aria-hidden','false');
   addHistory('Relatório de produção preparado para impressão');
+  const restoreReport=()=>report.setAttribute('aria-hidden','true');
+  window.addEventListener('afterprint',restoreReport,{once:true});
   window.print();
-  report.setAttribute('aria-hidden','true');
 }
 function acknowledgeAlert() {
   const hadOccurrence=state.warning||state.failure;
