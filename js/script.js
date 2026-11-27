@@ -428,7 +428,9 @@ function startProcess() {
 function pauseProcess(){state.running=false;addHistory("Processo pausado pelo operador");renderDashboard();}
 function resetProcess() {
   state.running=false;state.warning=false;state.failure=false;state.boxes=0;state.seconds=0;state.elapsed=0;
-  cycle=0;activeBox=null;palletTransfer=null;pallets=[];
+  cycle=0;activeBox=null;
+  if(palletTransfer && palletTransfer.group) scene.remove(palletTransfer.group);
+  palletTransfer=null;pallets=[];
   if(pallet)scene.remove(pallet.group);
   pallet=buildPallet();pallet.group.position.set(2.1,0,1.75);
   queue.forEach(q=>scene.remove(q.mesh));queue=[];
