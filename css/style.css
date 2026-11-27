@@ -1012,3 +1012,20 @@ footer {
 @media (prefers-reduced-motion: reduce) {
   *,*::before,*::after { animation-duration:.01ms!important; transition-duration:.01ms!important; }
 }
+
+
+/* Layout físico 3 x 2 por camada — capacidade total de 30 caixas */
+.position-grid {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+.position-grid i {
+  aspect-ratio: 1.25 / 1;
+}
+.scene-legend .robot-swatch,
+.scene-legend .belt-swatch,
+.scene-legend .fence-swatch {
+  background: #aeb9bf;
+}
+.scene-legend .box-swatch {
+  background: #bd8955;
+}
