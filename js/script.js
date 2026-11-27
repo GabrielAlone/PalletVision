@@ -5,7 +5,7 @@ const $ = id => document.getElementById(id);
 const TOTAL = 135, PER_PALLET = 27;
 const state = {
   running:false, warning:false, failure:false, boxes:0, seconds:0,
-  speed:95, alerts:[], history:[], elapsed:0
+  speed:90, alerts:[], history:[], elapsed:0
 };
 
 let scene, camera, renderer, controls, clock;
@@ -122,10 +122,12 @@ function buildRobot() {
   wrist=new THREE.Group(); scene.add(wrist);
   cylinder(wrist,.16,.2,M.robotDark,0,0,0);
   box(wrist,.34,.14,.3,M.steel,0,-.14,0);
-  box(wrist,.09,.32,.1,M.steelLight,-.14,-.34,0);
-  box(wrist,.09,.32,.1,M.steelLight,.14,-.34,0);
+  box(wrist,.09,.32,.1,M.blue,-.14,-.34,0);
+  box(wrist,.09,.32,.1,M.blue,.14,-.34,0);
   fingerL=wrist.children[wrist.children.length-2];
   fingerR=wrist.children[wrist.children.length-1];
+  box(wrist,.11,.075,.14,M.amber,-.14,-.49,.015);
+  box(wrist,.11,.075,.14,M.amber,.14,-.49,.015);
   box(wrist,.13,.045,.13,M.green,0,-.23,.17);
   const elbowJoint=mesh(scene,new THREE.SphereGeometry(.22,24,16),M.robotDark);
   const wristJoint=mesh(scene,new THREE.SphereGeometry(.19,24,16),M.steelLight);
@@ -268,7 +270,7 @@ function completeBox() {
 function updateCycle(dt) {
   if(!state.running||state.failure) return;
   if(!activeBox) { beginCycle(); return; }
-  cycle+=dt*(.78+state.speed/100*.42);
+  cycle+=dt*(.72+state.speed/100*.36);
   const t=Math.min(cycle,1);
   const source=beltPosition(.94);
   const target=palletTarget(state.boxes%PER_PALLET);
