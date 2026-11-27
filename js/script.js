@@ -61,6 +61,7 @@ function createConveyor(x,z,length,output=false) {
   const g=new THREE.Group(); g.position.set(x,0,z); scene.add(g);
   box(g,length,.34,1.35,M.steelDark,0,.68,0);
   box(g,length,.08,1.28,M.steel,0,.89,0);
+  box(g,length*.92,.035,.025,M.green,0,1.115,-.72);
   for(const side of [-.69,.69]) {
     box(g,length,.17,.09,M.steelDark,0,1.02,side);
     box(g,length,.035,.1,M.steelLight,0,1.12,side);
@@ -93,6 +94,7 @@ function buildRobot() {
   cylinder(base,.56,.2,M.robot,0,.35,0);
   cylinder(base,.35,.22,M.steelDark,0,.56,0);
   cylinder(base,.29,.25,M.robot,0,.78,0);
+  cylinder(base,.31,.045,M.green,0,.68,0);
   // Coluna estrutural liga a base ao ombro do braço, evitando aparência de garra solta.
   cylinder(base,.19,1.55,M.robotDark,0,1.62,0);
   cylinder(base,.24,.16,M.robot,0,2.42,0);
@@ -143,9 +145,9 @@ function buildEnvironment() {
   for(let x of [-5.8,5.8]) box(scene,.07,.02,7.8,M.amber,x,.005,0);
   addLabel("CELULA PAL-01",-5.5,.02,-5.7,.8);
   beltIn=createConveyor(-3.75,.45,4.8,false);
-  beltOut=createConveyor(5.95,1.75,6.0,true);
+  beltOut=createConveyor(7.0,1.75,5.4,true);
   buildRobot();
-  pallet=buildPallet(); pallet.group.position.set(2.1,0,1.75);
+  pallet=buildPallet(); pallet.group.position.set(1.55,0,1.75);
   for(let i=0;i<3;i++) {
     const c=createCrate(scene);
     queue.push({mesh:c,progress:.12+i*.25});
@@ -167,7 +169,7 @@ function palletTarget(index) {
   // Cada camada: duas fileiras com três caixas (3 x 2).
   const positions=[[-.72,-.36],[0,-.36],[.72,-.36],[-.72,.36],[0,.36],[.72,.36]];
   const [x,z]=positions[slot];
-  return V(2.1+x,.19+layer*.52,1.75+z);
+  return V(1.55+x,.19+layer*.52,1.75+z);
 }
 function updateQueue(dt) {
   const waiting=queue.filter(q=>q.mesh!==activeBox).sort((a,b)=>b.progress-a.progress);
@@ -208,12 +210,9 @@ function completeBox() {
   const target=palletTarget(idx);
   activeBox.position.set(target.x,target.y,target.z);
   activeBox.rotation.set(0,0,0);
-  activeBox.position.x-=2.1; activeBox.position.z-=1.75;
-  activeBox.position.y-=0;
-  activeBox.position.x+=2.1; activeBox.position.z+=1.75;
   activeBox.parent.remove(activeBox);
   pallet.group.add(activeBox);
-  activeBox.position.set(target.x-2.1,target.y,target.z-1.75);
+  activeBox.position.set(target.x-pallet.group.position.x,target.y,target.z-pallet.group.position.z);
   activeBox.rotation.set(0,0,0);
   pallet.boxes.push(activeBox);
   queue=queue.filter(q=>q.mesh!==activeBox);
@@ -225,7 +224,7 @@ function completeBox() {
   addHistory("Caixa "+state.boxes+" posicionada");
   if(state.boxes%PER_PALLET===0) {
     addHistory("Palete "+(state.boxes/PER_PALLET)+" completo — encaminhado para saída");
-    palletTransfer={elapsed:0,group:pallet.group,fromX:2.1,toX:6.0,fromY:0,toY:.96};
+    palletTransfer={elapsed:0,group:pallet.group,fromX:1.55,toX:7.0,fromY:0,toY:.96};
     pallet=null;
   }
   renderDashboard();
@@ -279,7 +278,7 @@ function updatePalletTransfer(dt) {
     pallets.push(palletTransfer.group);
     palletTransfer=null;
     if(state.boxes<TOTAL) {
-      pallet=buildPallet(); pallet.group.position.set(2.1,0,1.75);
+      pallet=buildPallet(); pallet.group.position.set(1.55,0,1.75);
       addHistory("Novo palete vazio posicionado na estação");
     }
     renderDashboard();
@@ -329,8 +328,9 @@ function animate() {
   if(!renderer) return;
   const dt=Math.min(clock.getDelta(),.04);
   if(state.running&&!state.failure) {
-    beltIn.rollers.forEach(r=>r.rotation.z+=dt*5);
-    if(palletTransfer) beltOut.rollers.forEach(r=>r.rotation.z+=dt*4);
+    const feeding=!activeBox&&!palletTransfer&&queue.some(q=>q.progress<.94);
+    if(feeding) beltIn.rollers.forEach(r=>r.rotation.z+=dt*1.8);
+    if(palletTransfer) beltOut.rollers.forEach(r=>r.rotation.z+=dt*2.0);
   }
   updateQueue(dt); updateCycle(dt); updatePalletTransfer(dt);
   if(controls) controls.update();
@@ -400,7 +400,7 @@ function renderGrid() {
 }
 function renderDashboard() {
   const boxes=state.boxes, pct=boxes/TOTAL*100, done=Math.floor(boxes/PER_PALLET);
-  const current=(palletTransfer||boxes>=TOTAL)?25:boxes%PER_PALLET;
+  const current=(palletTransfer||boxes>=TOTAL)?30:boxes%PER_PALLET;
   if($("kBoxes")) $("kBoxes").textContent=boxes;
   if($("productionBar")) $("productionBar").style.width=pct+"%";
   if($("productionPct")) $("productionPct").textContent=Math.round(pct)+"% concluído";
@@ -442,7 +442,7 @@ function resetProcess() {
   if(palletTransfer && palletTransfer.group) scene.remove(palletTransfer.group);
   palletTransfer=null;pallets=[];
   if(pallet)scene.remove(pallet.group);
-  pallet=buildPallet();pallet.group.position.set(2.1,0,1.75);
+  pallet=buildPallet();pallet.group.position.set(1.55,0,1.75);
   queue.forEach(q=>scene.remove(q.mesh));queue=[];
   for(let i=0;i<3;i++){const c=createCrate(scene);queue.push({mesh:c,progress:.12+i*.25});}
   state.alerts=[];state.history=[];addHistory("Novo lote preparado");renderDashboard();
