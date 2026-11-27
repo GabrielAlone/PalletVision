@@ -446,11 +446,18 @@ function renderDashboard() {
   else if(state.running) {status.textContent="PROCESSO EM OPERAÇÃO";msg.textContent="Alimentação e paletização em andamento";light.style.background="var(--green)";}
   else {status.textContent=boxes>=TOTAL?"LOTE CONCLUÍDO":"PROCESSO PARADO";msg.textContent=boxes>=TOTAL?"150 caixas processadas":"Aguardando comando do operador";light.style.background="var(--steel-light)";}
   if($("sceneState")) $("sceneState").textContent=state.failure?"● FALHA":state.warning?"● ATENÇÃO":state.running?"● EM OPERAÇÃO":"● EM ESPERA";
-  if($("sceneStep")) $("sceneStep").textContent=state.failure?"Operação interrompida":palletTransfer?"Transferindo palete completo":state.running?(activeBox?"Robô posicionando caixa":"Aguardando caixa na entrada"):"Aguardando início";
+  const robotPhase=!activeBox?"Aguardando caixa na entrada":
+    cycle<.15?"Aproximando a garra da caixa":
+    cycle<.22?"Prendendo a caixa":
+    cycle<.66?"Transportando até o palete":
+    cycle<.78?"Descendo para posicionar":
+    cycle<.86?"Liberando a caixa":
+    "Garra retornando à posição inicial";
+  if($("sceneStep")) $("sceneStep").textContent=state.failure?"Operação interrompida":palletTransfer?"Transferindo palete completo":state.running?robotPhase:"Aguardando início";
   if($("bToggle")) $("bToggle").textContent=state.running?"Ⅱ Pausar processo":"▶ Iniciar processo";
-  if($("currentStep")) $("currentStep").textContent=state.running?"Ciclo de coleta e posicionamento":"Aguardando início";
-  if($("nextStep")) $("nextStep").textContent=state.running?(palletTransfer?"Expedir palete completo":activeBox?"Empilhar caixa":"Alimentar estação"):state.failure?"Verificar equipamento":"Iniciar processo";
-  const flowStage=state.failure?"":palletTransfer?"exit":activeBox?(cycle<.32?"pick":"stack"):state.running?"feed":"idle";
+  if($("currentStep")) $("currentStep").textContent=state.running?(activeBox?robotPhase:"Alimentação da próxima caixa"):"Aguardando início";
+  if($("nextStep")) $("nextStep").textContent=state.running?(palletTransfer?"Expedir palete completo":activeBox?(cycle>=.86?"Iniciar próxima coleta":"Retornar garra e preparar próxima coleta"):"Alimentar estação"):state.failure?"Verificar equipamento":"Iniciar processo";
+  const flowStage=state.failure?"":palletTransfer?"exit":activeBox?(cycle<.22?"pick":"stack"):state.running?"feed":"idle";
   ["flowFeed","flowPick","flowStack","flowExit"].forEach((id,i)=>{
     const el=$(id); if(!el)return;
     const stages=["feed","pick","stack","exit"];
