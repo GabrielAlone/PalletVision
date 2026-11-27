@@ -114,8 +114,6 @@ function buildRobot() {
   box(wrist,.09,.32,.1,M.steelLight,.14,-.34,0);
   fingerL=wrist.children[wrist.children.length-2];
   fingerR=wrist.children[wrist.children.length-1];
-  box(wrist,.11,.07,.12,M.green,-.14,-.49,0);
-  box(wrist,.11,.07,.12,M.green,.14,-.49,0);
   box(wrist,.13,.045,.13,M.green,0,-.23,.17);
   robotRig={shoulder,base};
   robotLamp=mesh(base,new THREE.SphereGeometry(.075,16,12),M.green,0,1.02,.28);
