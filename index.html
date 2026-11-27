@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PALLETINOVA | Monitoramento Industrial</title>
+  <link rel="stylesheet" href="css/style.css">
+
+  <!-- Biblioteca responsável pelo modelo 3D -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+</head>
+<body>
+
+<header class="topbar">
+  <a class="brand" href="#dashboard">
+    <span class="brand-mark">P</span>
+    <span>
+      <b>PALLETINOVA</b>
+      <small>INDUSTRIAL MONITORING SYSTEM</small>
+    </span>
+  </a>
+
+  <nav>
+    <a href="#dashboard">Dashboard</a>
+    <a href="#producao">Produção</a>
+    <a href="#estacao">Paletização</a>
+    <a href="#equipamentos">Equipamentos</a>
+    <a href="#alertas">Alertas</a>
+  </nav>
+
+  <div class="online"><i></i> SISTEMA ONLINE</div>
+</header>
+
+<main class="wrap" id="dashboard">
+
+  <section class="page-heading">
+    <div>
+      <span class="eyebrow">CENTRO DE CONTROLE / LINHA 01</span>
+      <h1>Painel de paletização</h1>
+      <p>Monitoramento em tempo real da célula automatizada</p>
+    </div>
+
+    <div class="actions">
+      <button class="btn ghost" id="bReset">↻ Reiniciar lote</button>
+      <button class="btn primary" id="bToggle">▶ Iniciar processo</button>
+    </div>
+  </section>
+
+  <section class="statusbar">
+    <div class="status-main">
+      <span class="status-light" id="statusLight"></span>
+      <div>
+        <span class="eyebrow">STATUS DA LINHA</span>
+        <b id="statusText">PROCESSO PARADO</b>
+        <small id="statusMessage">Aguardando início da operação</small>
+      </div>
+    </div>
+
+    <div class="status-item">
+      <small>LINHA</small>
+      <b>PAL-01</b>
+    </div>
+
+    <div class="status-item">
+      <small>MODO</small>
+      <b>AUTOMÁTICO</b>
+    </div>
+
+    <div class="status-item">
+      <small>COMUNICAÇÃO</small>
+      <b class="green-text">● CONECTADO</b>
+    </div>
+
+    <span class="sim-tag">SIMULAÇÃO</span>
+  </section>
+
+  <section class="kpis" id="producao">
+
+    <article class="card kpi">
+      <span>Produção do lote</span>
+      <div class="metric">
+        <b id="kBoxes">0</b>
+        <small>/ 125 caixas</small>
+      </div>
+      <div class="progress"><i id="productionBar"></i></div>
+      <div class="foot">
+        <small id="productionPct">0% concluído</small>
+        <small id="remaining">125 restantes</small>
+      </div>
+    </article>
+
+    <article class="card kpi">
+      <span>Rendimento da linha</span>
+      <div class="metric">
+        <b id="efficiency">—</b>
+        <small>%</small>
+      </div>
+      <div class="foot">
+        <small id="efficiencyText">Linha parada</small>
+        <small>PAL-01</small>
+      </div>
+    </article>
+
+    <article class="card kpi">
+      <span>Paletes concluídos</span>
+      <div class="metric">
+        <b id="pallets">0</b>
+        <small>de 5 unidades</small>
+      </div>
+      <div class="progress"><i id="palletBar"></i></div>
+      <div class="foot">
+        <small id="currentPallet">Palete atual: 1</small>
+        <small id="palletPosition">0 / 25 caixas</small>
+      </div>
+    </article>
+
+    <article class="card kpi">
+      <span>Tempo de operação</span>
+      <div class="metric">
+        <b id="elapsed">00:00</b>
+      </div>
+      <div class="foot">
+        <small id="cycleTime">Ciclo: —</small>
+        <small id="clock">--:--:--</small>
+      </div>
+    </article>
+
+  </section>
+
+  <section class="main-grid" id="estacao">
+
+    <article class="card scene-card">
+
+      <div class="card-heading">
+        <div>
+          <span class="eyebrow">CÉLULA INDUSTRIAL EM 3D</span>
+          <h2>Estação automatizada de paletização</h2>
+        </div>
+        <span class="state-chip" id="sceneState">● EM ESPERA</span>
+      </div>
+
+      <div class="scene-frame">
+
+        <div id="scene3d" aria-label="Modelo 3D interativo da estação industrial"></div>
+
+        <div class="scene-topline">
+          <span><i></i> VISUALIZAÇÃO 3D</span>
+          <b id="sceneStep">Aguardando início</b>
+        </div>
+
+        <div class="scene-legend">
+          <span><i class="swatch robot-swatch"></i> Robô industrial</span>
+          <span><i class="swatch belt-swatch"></i> Esteira de roletes</span>
+          <span><i class="swatch box-swatch"></i> Caixas</span>
+          <span><i class="swatch fence-swatch"></i> Proteção</span>
+        </div>
+
+        <div class="scene-error" id="sceneError" hidden></div>
+
+      </div>
+
+      <div class="scene-hint">
+        Arraste para girar a câmera · Role para aproximar · Duplo clique para voltar à visão inicial
+      </div>
+
+      <div class="process-info">
+        <div>
+          <small>ETAPA ATUAL</small>
+          <b id="currentStep">Aguardando início</b>
+        </div>
+
+        <div>
+          <small>PRÓXIMA AÇÃO</small>
+          <b id="nextStep">Iniciar processo</b>
+        </div>
+
+        <div>
+          <small>ÚLTIMA ATUALIZAÇÃO</small>
+          <b id="updated">--:--:--</b>
+        </div>
+      </div>
+
+    </article>
+
+    <article class="card pallet-card">
+
+      <div class="card-heading">
+        <div>
+          <span class="eyebrow">ACOMPANHAMENTO FÍSICO</span>
+          <h2>Montagem do palete</h2>
+        </div>
+        <span class="state-chip" id="layer">CAMADA 1</span>
+      </div>
+
+      <div class="pallet-count">
+        <b id="palletCount">00</b>
+        <small>/25</small>
+        <strong id="palletPct">0%</strong>
+      </div>
+
+      <span class="eyebrow">CAIXAS POSICIONADAS</span>
+
+      <div class="position-grid" id="positionGrid"></div>
+
+      <div class="mini-legend">
+        <span><i class="occupied"></i> Ocupada</span>
+        <span><i></i> Disponível</span>
+      </div>
+
+      <p class="note">
+        Cada palete possui 25 posições, organizadas em 5 camadas.
+        O preenchimento acompanha cada ciclo do robô.
+      </p>
+
+      <div class="pallet-summary">
+        <div>
+          <small>CAPACIDADE POR PALETE</small>
+          <b>25 caixas</b>
+        </div>
+        <div>
+          <small>CAPACIDADE DO LOTE</small>
+          <b>125 caixas</b>
+        </div>
+      </div>
+
+    </article>
+
+  </section>
+
+  <section class="bottom-grid">
+
+    <article class="card" id="equipamentos">
+      <div class="card-heading">
+        <div>
+          <span class="eyebrow">ENTRADAS INDUSTRIAIS</span>
+          <h2>Equipamentos e sensores</h2>
+        </div>
+        <span class="state-chip" id="onlineCount">5 ONLINE</span>
+      </div>
+
+      <ul class="equipment-list" id="equipmentList"></ul>
+    </article>
+
+    <article class="card alert-card" id="alertas">
+
+      <div class="card-heading">
+        <div>
+          <span class="eyebrow">MONITORAMENTO DE OCORRÊNCIAS</span>
+          <h2>Central de alertas</h2>
+        </div>
+        <span class="alert-count" id="alertCount">0 ATIVOS</span>
+      </div>
+
+      <div class="alert-summary" id="alertSummary">
+        <span class="alert-symbol">✓</span>
+        <div>
+          <b id="alertTitle">Sistema operando normalmente</b>
+          <small id="alertDescription">Nenhuma ocorrência ativa.</small>
+        </div>
+      </div>
+
+      <ul class="alert-list" id="alertList"></ul>
+
+    </article>
+
+    <article class="card">
+
+      <div class="card-heading">
+        <div>
+          <span class="eyebrow">REGISTRO OPERACIONAL</span>
+          <h2>Histórico de atividades</h2>
+        </div>
+      </div>
+
+      <ul class="history-list" id="historyList"></ul>
+
+      <div class="speed-control">
+        <label for="speed">
+          Velocidade da simulação
+          <b id="speedValue">70%</b>
+        </label>
+        <input type="range" id="speed" min="40" max="100" value="70">
+      </div>
+
+      <div class="simulation-buttons">
+        <button class="btn warning" id="bWarn">⚠ Simular atenção</button>
+        <button class="btn danger" id="bFail">✖ Simular falha</button>
+      </div>
+
+    </article>
+
+  </section>
+
+  <footer>
+    PALLETINOVA · Protótipo de monitoramento industrial · Dados simulados, sem conexão com CLP real
+  </footer>
+
+</main>
+
+<script src="js/script.js"></script>
+</body>
+</html>
