@@ -2,7 +2,7 @@
 "use strict";
 
 const $ = id => document.getElementById(id);
-const TOTAL = 125, PER_PALLET = 25;
+const TOTAL = 150, PER_PALLET = 30;
 const state = {
   running:false, warning:false, failure:false, boxes:0, seconds:0,
   speed:70, alerts:[], history:[], elapsed:0
@@ -82,9 +82,9 @@ function createConveyor(x,z,length,output=false) {
 }
 function buildPallet() {
   const g=new THREE.Group(); scene.add(g);
-  box(g,1.85,.14,1.65,M.wood,0,.12,0);
-  for(let z of [-.55,0,.55]) box(g,1.72,.13,.22,M.woodLight,0,.25,z);
-  for(let x of [-.72,.72]) box(g,.12,.08,1.45,M.wood,x,.07,0);
+  box(g,2.28,.14,1.62,M.wood,0,.12,0);
+  for(let z of [-.55,0,.55]) box(g,2.12,.13,.22,M.woodLight,0,.25,z);
+  for(let x of [-.88,0,.88]) box(g,.12,.08,1.42,M.wood,x,.07,0);
   return {group:g,boxes:[]};
 }
 function buildRobot() {
@@ -140,7 +140,7 @@ function buildEnvironment() {
   for(let x of [-5.8,5.8]) box(scene,.07,.02,7.8,M.amber,x,.005,0);
   addLabel("CELULA PAL-01",-5.5,.02,-5.7,.8);
   beltIn=createConveyor(-3.75,.45,4.8,false);
-  beltOut=createConveyor(4.9,1.75,4.6,true);
+  beltOut=createConveyor(5.95,1.75,6.0,true);
   buildRobot();
   pallet=buildPallet(); pallet.group.position.set(2.1,0,1.75);
   for(let i=0;i<3;i++) {
@@ -160,10 +160,11 @@ function beltPosition(progress) {
   return V(-3.75-2.4+progress*4.8,1.03,.45);
 }
 function palletTarget(index) {
-  const layer=Math.floor(index/5), slot=index%5;
-  const positions=[[-.48,-.32],[0,-.32],[.48,-.32],[-.24,.32],[.24,.32]];
+  const layer=Math.floor(index/6), slot=index%6;
+  // Cada camada: duas fileiras com três caixas (3 x 2).
+  const positions=[[-.72,-.36],[0,-.36],[.72,-.36],[-.72,.36],[0,.36],[.72,.36]];
   const [x,z]=positions[slot];
-  return V(2.1+x,.32+layer*.49,1.75+z);
+  return V(2.1+x,.19+layer*.50,1.75+z);
 }
 function updateQueue(dt) {
   const waiting=queue.filter(q=>q.mesh!==activeBox).sort((a,b)=>b.progress-a.progress);
@@ -221,13 +222,13 @@ function completeBox() {
   addHistory("Caixa "+state.boxes+" posicionada");
   if(state.boxes%PER_PALLET===0) {
     addHistory("Palete "+(state.boxes/PER_PALLET)+" completo — encaminhado para saída");
-    palletTransfer={elapsed:0,group:pallet.group};
+    palletTransfer={elapsed:0,group:pallet.group,fromX:2.1,toX:6.0,fromY:0,toY:.96};
     pallet=null;
   }
   renderDashboard();
   if(state.boxes>=TOTAL) {
     state.running=false;
-    addHistory("Lote de 125 caixas concluído");
+    addHistory("Lote de 150 caixas concluído");
     addAlert("normal","Lote finalizado","Os cinco paletes foram concluídos.");
   }
 }
@@ -238,9 +239,9 @@ function updateCycle(dt) {
   const t=Math.min(cycle,1);
   const source=beltPosition(.94);
   const target=palletTarget(state.boxes%PER_PALLET);
-  const start=V(source.x,source.y+.48,source.z);
+  const start=V(source.x,source.y+1.05,source.z);
   const pick=V(source.x,source.y+.48,source.z);
-  const carry=V(target.x,2.65,target.z);
+  const carry=V(target.x,2.85,target.z);
   const drop=V(target.x,target.y+.48,target.z);
   let point, boxPoint, closed=false;
   if(t<.2) {
@@ -263,10 +264,14 @@ function updateCycle(dt) {
 function updatePalletTransfer(dt) {
   if(!palletTransfer) return;
   palletTransfer.elapsed+=dt;
-  const t=Math.min(1,palletTransfer.elapsed/2.8);
-  const eased=t*t*(3-2*t);
-  palletTransfer.group.position.x=THREE.MathUtils.lerp(2.1,7.5,eased);
-  if(t>=1) {
+  // Primeiro eleva o palete até a altura dos roletes; depois transfere pela esteira.
+  const liftT=Math.min(1,palletTransfer.elapsed/.75);
+  const moveT=Math.max(0,Math.min(1,(palletTransfer.elapsed-.75)/2.6));
+  const liftEase=liftT*liftT*(3-2*liftT);
+  const moveEase=moveT*moveT*(3-2*moveT);
+  palletTransfer.group.position.y=THREE.MathUtils.lerp(palletTransfer.fromY,palletTransfer.toY,liftEase);
+  palletTransfer.group.position.x=THREE.MathUtils.lerp(palletTransfer.fromX,palletTransfer.toX,moveEase);
+  if(moveT>=1) {
     scene.remove(palletTransfer.group);
     pallets.push(palletTransfer.group);
     palletTransfer=null;
@@ -301,6 +306,8 @@ function buildScene() {
   key.position.set(-7,13,8); key.castShadow=true; key.shadow.mapSize.set(2048,2048); scene.add(key);
   const fill=new THREE.DirectionalLight(0xdce5e8,.65); fill.position.set(8,7,-8); scene.add(fill);
   buildEnvironment();
+  // Posição de repouso: mantém o braço apoiado e a garra junto ao conjunto do robô.
+  updateRobotForPoint(V(-.1,2.35,-.2),false);
   clock=new THREE.Clock();
   renderer.domElement.addEventListener("dblclick",()=>{
     camera.position.set(10,9,13); if(controls) controls.target.set(0,.8,0);
@@ -320,7 +327,7 @@ function animate() {
   const dt=Math.min(clock.getDelta(),.04);
   if(state.running&&!state.failure) {
     beltIn.rollers.forEach(r=>r.rotation.z+=dt*5);
-    beltOut.rollers.forEach(r=>r.rotation.z+=dt*3);
+    if(palletTransfer) beltOut.rollers.forEach(r=>r.rotation.z+=dt*4);
   }
   updateQueue(dt); updateCycle(dt); updatePalletTransfer(dt);
   if(controls) controls.update();
@@ -386,7 +393,7 @@ function updateEquipment() {
 }
 function renderGrid() {
   const grid=$("positionGrid");if(!grid)return;grid.innerHTML="";
-  for(let i=0;i<25;i++)grid.append(document.createElement("i"));
+  for(let i=0;i<30;i++)grid.append(document.createElement("i"));
 }
 function renderDashboard() {
   const boxes=state.boxes, pct=boxes/TOTAL*100, done=Math.floor(boxes/PER_PALLET);
@@ -400,10 +407,10 @@ function renderDashboard() {
   if($("pallets")) $("pallets").textContent=done;
   if($("palletBar")) $("palletBar").style.width=done/5*100+"%";
   if($("currentPallet")) $("currentPallet").textContent=boxes>=TOTAL?"Lote finalizado":"Palete atual: "+(done+1);
-  if($("palletPosition")) $("palletPosition").textContent=current+" / 25 caixas";
+  if($("palletPosition")) $("palletPosition").textContent=current+" / 30 caixas";
   if($("palletCount")) $("palletCount").textContent=String(current).padStart(2,"0");
-  if($("palletPct")) $("palletPct").textContent=Math.round(current/25*100)+"%";
-  if($("layer")) $("layer").textContent="CAMADA "+Math.min(5,Math.floor(current/5)+1);
+  if($("palletPct")) $("palletPct").textContent=Math.round(current/30*100)+"%";
+  if($("layer")) $("layer").textContent=current>=30?"PALLETE COMPLETO":"CAMADA "+Math.min(5,Math.floor(current/6)+1);
   if($("positionGrid")) [...$("positionGrid").children].forEach((el,i)=>el.classList.toggle("filled",i<current));
   if($("elapsed")) $("elapsed").textContent=String(Math.floor(state.seconds/60)).padStart(2,"0")+":"+String(state.seconds%60).padStart(2,"0");
   if($("cycleTime")) $("cycleTime").textContent=state.running?"Ciclo automático":"Ciclo: —";
