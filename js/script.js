@@ -5,7 +5,7 @@ const $ = id => document.getElementById(id);
 const TOTAL = 135, PER_PALLET = 27;
 const state = {
   running:false, warning:false, failure:false, boxes:0, seconds:0,
-  speed:110, alerts:[], history:[], elapsed:0
+  speed:95, alerts:[], history:[], elapsed:0
 };
 
 let scene, camera, renderer, controls, clock;
@@ -16,11 +16,11 @@ let sensorLamp, robotLamp;
 
 const C = {
   floor:0x687277, floorLine:0x3c474c, wall:0x252d31,
-  steel:0x8d999f, steelLight:0xd2dadd, steelDark:0x252c30,
-  rubber:0x171c1f, robot:0x9ba5aa, robotDark:0x20272b,
-  box:0xc18b4d, boxTop:0xe0b36f, tape:0x81552d,
-  wood:0x765334, woodLight:0xa77b4d, green:0x00c58b,
-  blue:0x168eaa, amber:0xe0ad3e, red:0xd84d4d, white:0xe7ecee
+  steel:0x9aa8ae, steelLight:0x60717a, steelDark:0x252d32,
+  rubber:0x111619, robot:0xb5c0c5, robotDark:0x171e22,
+  box:0xc98543, boxTop:0xf0bd72, tape:0x70401f,
+  wood:0x79502f, woodLight:0xa97542, green:0x00d6a0,
+  blue:0x12a6c7, amber:0xffb52e, red:0xe34b58, white:0xeaf3f6
 };
 const LAYER_CAPACITY = 9;
 const PALLET_LAYERS = 3;
@@ -67,16 +67,25 @@ function createConveyor(x,z,length,output=false) {
   const width=output?2.4:1.55;
   const edge=width/2-.055;
   box(g,length,.34,width,M.steelDark,0,.68,0);
-  box(g,length,.08,width-.08,M.steel,0,.89,0);
+  box(g,length,.08,width-.08,M.steelDark,0,.89,0);
+  box(g,length*.96,.025,width-.14,M.rubber,0,.945,0);
   for(const side of [-edge,edge]) {
     box(g,length*.92,.035,.025,M.blue,0,1.115,side);
     box(g,length,.17,.09,M.steelDark,0,1.02,side);
     box(g,length,.035,.1,M.blue,0,1.12,side);
+    box(g,length*.88,.025,.105,M.green,0,1.145,side);
   }
   const rollers=[];
   const n=Math.floor(length/.25);
   for(let i=0;i<=n;i++) {
-    rollers.push(cylinder(g,.065,width-.18,M.steelLight,-length/2+i*length/n,.94,0,Math.PI/2));
+    const roller=cylinder(g,.065,width-.18,M.steelDark,-length/2+i*length/n,.94,0,Math.PI/2);
+    rollers.push(roller);
+    // Anéis coloridos nas extremidades dão acabamento sem criar peças giratórias soltas.
+    for(const side of [-1,1]) {
+      const ring=cylinder(g,.071,.045,M.blue,-length/2+i*length/n,.94,side*(width-.18)/2,Math.PI/2);
+      roller.userData.rings=roller.userData.rings||[];
+      roller.userData.rings.push(ring);
+    }
   }
   for(const px of [-length/2+.2,0,length/2-.2]) for(const pz of [-width/2+.16,width/2-.16]) {
     box(g,.12,.62,.12,M.steelDark,px,.31,pz);
@@ -259,7 +268,7 @@ function completeBox() {
 function updateCycle(dt) {
   if(!state.running||state.failure) return;
   if(!activeBox) { beginCycle(); return; }
-  cycle+=dt*(1.15+state.speed/100*.85);
+  cycle+=dt*(.78+state.speed/100*.42);
   const t=Math.min(cycle,1);
   const source=beltPosition(.94);
   const target=palletTarget(state.boxes%PER_PALLET);
@@ -364,8 +373,8 @@ function animate() {
   const dt=Math.min(clock.getDelta(),.04);
   if(state.running&&!state.failure) {
     const feeding=!activeBox&&!palletTransfer&&queue.some(q=>q.progress<.94);
-    if(feeding) beltIn.rollers.forEach(r=>r.rotation.z+=dt*2.8);
-    if(palletTransfer) beltOut.rollers.forEach(r=>r.rotation.z+=dt*3.0);
+    if(feeding) beltIn.rollers.forEach(r=>r.rotateY(dt*2.8));
+    if(palletTransfer) beltOut.rollers.forEach(r=>r.rotateY(dt*3.0));
   }
   updateQueue(dt); updateCycle(dt); updatePalletTransfer(dt);
   if(controls) controls.update();
